@@ -3,12 +3,11 @@
 
 | # | Member Name | Role |
 |---|---|---|
-| 1 | Member Name | Team Lead / Full Stack Developer |
-| 2 | Member Name | Backend Developer |
-| 3 | Member Name | Frontend Developer |
-| 4 | Member Name | Database / DevOps Engineer |
+| 1 | Pruthvi Raj | Team Lead / Full Stack Developer |
+| 2 | Prasanna | Backend Developer |
+| 3 | Vidya | Frontend Developer |
+| 4 | Karthikeya | Database / DevOps Engineer |
 
-> *(Replace with actual member names and roles)*
 
 ---
 
