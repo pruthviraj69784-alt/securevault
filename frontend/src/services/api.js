@@ -2,7 +2,8 @@ import axios from 'axios'
 
 const resolveApiBaseUrl = () => {
     const rawBaseUrl =
-        import.meta.env.VITE_API_BASE_URL
+        import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.VITE_API_URL
     const configuredBaseUrl = rawBaseUrl ? rawBaseUrl.trim() : ''
     if (configuredBaseUrl) {
         return configuredBaseUrl.replace(/\/$/, '')
