@@ -102,8 +102,8 @@ class QRSessionService {
 
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
 
-    let frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    if (frontendUrl.includes("localhost") || frontendUrl.includes("127.0.0.1")) {
+    let frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === "production" ? "https://securevault-app.onrender.com" : "http://localhost:3000");
+    if (process.env.NODE_ENV !== "production" && (frontendUrl.includes("localhost") || frontendUrl.includes("127.0.0.1"))) {
       const lanIp = getLocalIpAddress();
       if (lanIp !== "localhost") {
         frontendUrl = frontendUrl.replace("localhost", lanIp).replace("127.0.0.1", lanIp);
