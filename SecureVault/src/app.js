@@ -49,11 +49,23 @@ const configuredOrigins = (process.env.CORS_ORIGIN || "")
 
 const allowedOrigins = new Set([...configuredOrigins, ...localDevOrigins]);
 const localOriginRegExp = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$/i;
+const cloudSubdomainRegExp = /^https:\/\/[\w.-]+\.(onrender\.com|up\.railway\.app|vercel\.app|netlify\.app)$/i;
 
-// CORS — allow the configured origins plus any local hostname/port for dev.
+// CORS — allow configured origins, onrender/railway/vercel subdomains, and local dev
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.has(origin) || localOriginRegExp.test(origin)) {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        if (
+            allowedOrigins.has(origin) ||
+            allowedOrigins.has("*") ||
+            localOriginRegExp.test(origin) ||
+            cloudSubdomainRegExp.test(origin) ||
+            configuredOrigins.some((allowed) => allowed === "*" || (allowed.includes("*") && new RegExp("^" + allowed.replace(/\*/g, ".*") + "$", "i").test(origin)))
+        ) {
             callback(null, true);
             return;
         }

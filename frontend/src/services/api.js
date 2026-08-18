@@ -6,6 +6,12 @@ const resolveApiBaseUrl = () => {
     if (configuredBaseUrl) {
         return configuredBaseUrl.replace(/\/$/, '')
     }
+
+    // Auto-detect Render cloud deployment if hosted on *.onrender.com
+    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.onrender.com')) {
+        return 'https://securevault-api.onrender.com/api'
+    }
+
     return '/api'
 }
 
