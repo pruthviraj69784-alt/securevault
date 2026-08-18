@@ -77,11 +77,12 @@ export default function Favorites() {
           {files.map((f, i) => {
             const latest = f.versions?.[f.versions.length - 1]
             const isZK = latest?.isZeroKnowledge
+            const fileId = f._id || f.id
             const ext = f.originalName?.split('.').pop()?.toUpperCase()?.slice(0, 4) || 'FILE'
             const color = extColor(f.originalName)
             return (
               <motion.article
-                key={f._id}
+                key={fileId || i}
                 className="file-preview-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -108,7 +109,7 @@ export default function Favorites() {
                       </p>
                     </div>
                   </div>
-                  <motion.button onClick={() => handleToggleFavorite(f._id)} whileHover={{ scale: 1.2 }}
+                  <motion.button onClick={() => handleToggleFavorite(fileId)} whileHover={{ scale: 1.2 }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', flexShrink: 0 }}>
                     <Star size={17} style={{ fill: '#f59e0b' }} />
                   </motion.button>
@@ -127,7 +128,7 @@ export default function Favorites() {
                 <div style={{ marginTop: '0.875rem', display: 'flex', gap: '0.35rem', justifyContent: 'flex-end' }}>
                   {[
                     { title: 'Inspect', Icon: Eye,      onClick: () => setInspectFile(f) },
-                    { title: 'Download', Icon: Download, onClick: () => handleDownload(f._id, f.originalName) },
+                    { title: 'Download', Icon: Download, onClick: () => handleDownload(fileId, f.originalName) },
                     { title: 'Share',   Icon: Share2,   onClick: () => setShareFile(f) },
                   ].map(({ title, Icon, onClick }) => (
                     <motion.button key={title} title={title} onClick={onClick} className="btn-icon"

@@ -124,15 +124,25 @@ app.use(
 // API Routes
 app.use("/api", monitoringRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/files", fileRoutes);
 app.use("/api/shares/internal", internalShareRoutes);
 app.use("/api/shares/requests", accessRequestRoutes);
 app.use("/api/shares", shareRoutes);
+app.use("/api/share", shareRoutes);
+app.use("/shares", shareRoutes);
+app.use("/share", shareRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/audit", auditRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/admin", adminRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/webhooks", webhookRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/notifications", notificationRoutes);
 app.use("/api/qr", qrSessionRoutes);
+app.use("/qr", qrSessionRoutes);
 
 // 404 Handler
 app.use((req, res) => {

@@ -57,7 +57,7 @@ export default function Upload() {
       } else { form.append('file', file) }
       setStage('upload')
       const response = await fileApi.upload(form, val => setProgress(15 + Math.round(val * 0.65)))
-      const uploadedId = response.data.data?._id
+      const uploadedId = response.data.data?._id || response.data.data?.id
       setStage('queue'); setProgress(85)
       if (uploadedId) await waitForProcessing(uploadedId)
       setStage('verify'); setProgress(100); setStatus('success')

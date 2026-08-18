@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
-import axios from 'axios'
 import {
   QrCode, Camera, ShieldCheck, Download, AlertTriangle,
   FileText, User, Clock, Loader2, RefreshCw, X, Shield, Lock
@@ -11,13 +10,7 @@ import { processAndSaveDownload } from '../utils/downloadHelper'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import ZKPromptModal from '../components/ZKPromptModal'
-
-const api = axios.create({ baseURL: '/api' })
-api.interceptors.request.use(cfg => {
-  const t = localStorage.getItem('sv_token')
-  if (t) cfg.headers.Authorization = `Bearer ${t}`
-  return cfg
-})
+import api from '../services/api'
 
 function parseQRPayload(text) {
   try {

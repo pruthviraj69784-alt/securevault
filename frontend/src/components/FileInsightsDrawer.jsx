@@ -64,7 +64,7 @@ export default function FileInsightsDrawer({ file, onClose, onDownload, onShare 
 
             {/* Quick Actions */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-              <button onClick={() => onDownload(file._id, file.originalName)} className="btn-primary" style={{ justifyContent: 'center', fontSize: '0.8rem', padding: '0.6rem' }}>
+              <button onClick={() => onDownload(file._id || file.id, file.originalName)} className="btn-primary" style={{ justifyContent: 'center', fontSize: '0.8rem', padding: '0.6rem' }}>
                 <Download size={14} /> Download
               </button>
               <button onClick={() => onShare(file)} className="btn-ghost" style={{ justifyContent: 'center', fontSize: '0.8rem', padding: '0.6rem' }}>

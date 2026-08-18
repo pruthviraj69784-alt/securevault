@@ -187,10 +187,11 @@ export default function Files() {
             const latest = f.versions?.[f.versions.length - 1]
             const isZK = latest?.isZeroKnowledge
             const ext = f.originalName?.split('.').pop()?.toUpperCase()?.slice(0, 4) || 'FILE'
+            const fileId = f._id || f.id
             const color = extColor(f.originalName)
             return (
               <motion.article
-                key={f._id}
+                key={fileId || i}
                 className="file-preview-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -216,7 +217,7 @@ export default function Files() {
                       </p>
                     </div>
                   </div>
-                  <motion.button onClick={() => handleToggleFavorite(f._id)} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}
+                  <motion.button onClick={() => handleToggleFavorite(fileId)} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: f.isFavorite ? '#f59e0b' : 'var(--muted)', flexShrink: 0 }}>
                     <Star size={16} style={{ fill: f.isFavorite ? '#f59e0b' : 'none' }} />
                   </motion.button>
@@ -238,9 +239,9 @@ export default function Files() {
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
                     {[
                       { title: 'Inspect', Icon: Eye,      onClick: () => setInspectFile(f) },
-                      { title: 'Download', Icon: Download, onClick: () => handleDownload(f._id, f.originalName) },
+                      { title: 'Download', Icon: Download, onClick: () => handleDownload(fileId, f.originalName) },
                       { title: 'Share',   Icon: Share2,   onClick: () => setShareFile(f) },
-                      { title: 'Trash',   Icon: Trash2,   onClick: () => handleMoveToTrash(f._id, f.originalName), danger: true },
+                      { title: 'Trash',   Icon: Trash2,   onClick: () => handleMoveToTrash(fileId, f.originalName), danger: true },
                     ].map(({ title, Icon, onClick, danger }) => (
                       <motion.button key={title} title={title} onClick={onClick} className="btn-icon"
                         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
@@ -264,15 +265,16 @@ export default function Files() {
                 </tr>
               </thead>
               <tbody>
-                {files.map(f => {
+                {files.map((f, i) => {
                   const latest = f.versions?.[f.versions.length - 1]
                   const isZK = latest?.isZeroKnowledge
                   const color = extColor(f.originalName)
                   const ext = f.originalName?.split('.').pop()?.toUpperCase()?.slice(0, 3)
+                  const fileId = f._id || f.id
                   return (
-                    <tr key={f._id}>
+                    <tr key={fileId || i}>
                       <td style={{ width: '2.5rem' }}>
-                        <motion.button onClick={() => handleToggleFavorite(f._id)} whileTap={{ scale: 0.9 }}
+                        <motion.button onClick={() => handleToggleFavorite(fileId)} whileTap={{ scale: 0.9 }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: f.isFavorite ? '#f59e0b' : 'var(--muted)' }}>
                           <Star size={15} style={{ fill: f.isFavorite ? '#f59e0b' : 'none' }} />
                         </motion.button>
@@ -295,9 +297,9 @@ export default function Files() {
                         <div style={{ display: 'flex', gap: '0.25rem' }}>
                           {[
                             { title: 'Inspect', Icon: Eye,      onClick: () => setInspectFile(f) },
-                            { title: 'Download', Icon: Download, onClick: () => handleDownload(f._id, f.originalName) },
+                            { title: 'Download', Icon: Download, onClick: () => handleDownload(fileId, f.originalName) },
                             { title: 'Share',   Icon: Share2,   onClick: () => setShareFile(f) },
-                            { title: 'Trash',   Icon: Trash2,   onClick: () => handleMoveToTrash(f._id, f.originalName), danger: true },
+                            { title: 'Trash',   Icon: Trash2,   onClick: () => handleMoveToTrash(fileId, f.originalName), danger: true },
                           ].map(({ title, Icon, onClick, danger }) => (
                             <button key={title} title={title} onClick={onClick} className="btn-icon"
                               style={{ ...(danger ? { color: 'var(--danger)' } : {}) }}>

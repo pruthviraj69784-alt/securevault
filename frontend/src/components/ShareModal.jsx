@@ -2,19 +2,12 @@ import { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
-import axios from 'axios'
 import {
   X, Share2, Globe, Users, Search, Shield, Calendar, Download,
   Link2, CheckCircle2, Copy, ExternalLink, QrCode
 } from 'lucide-react'
 import QRShareModal from './QRShareModal'
-
-const api = axios.create({ baseURL: '/api' })
-api.interceptors.request.use(cfg => {
-  const t = localStorage.getItem('sv_token')
-  if (t) cfg.headers.Authorization = `Bearer ${t}`
-  return cfg
-})
+import api from '../services/api'
 
 export default function ShareModal({ file, onClose }) {
   const qc = useQueryClient()
@@ -79,8 +72,9 @@ export default function ShareModal({ file, onClose }) {
 
   const handleInternalShare = () => {
     if (!recipientEmail.trim()) return toast.error('Please enter recipient email.')
+    const fileId = file?._id || file?.id
     internalShareMutation.mutate({
-      fileId: file._id,
+      fileId,
       recipientEmail: recipientEmail.trim(),
       permission,
       message,
@@ -97,8 +91,9 @@ export default function ShareModal({ file, onClose }) {
       const diffMs = selectedDate.getTime() - Date.now()
       expiresInHours = Math.max(1, Math.ceil(diffMs / 3_600_000))
     }
+    const fileId = file?._id || file?.id
     externalShareMutation.mutate({
-      fileId: file._id,
+      fileId,
       expiresInHours,
       maxDownloads: maxDownloads ? parseInt(maxDownloads, 10) : null
     })

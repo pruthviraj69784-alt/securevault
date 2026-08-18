@@ -80,23 +80,28 @@ export default function Trash() {
               </thead>
               <tbody>
                 <AnimatePresence>
-                  {files.map(f => {
+                  {files.map((f, i) => {
                     const latest = f.versions?.[f.versions.length - 1]
+                    const fileId = f._id || f.id
+                    const ext = f.originalName?.split('.').pop()?.toUpperCase()?.slice(0, 3)
+                    const color = 'var(--danger)'
                     return (
-                      <motion.tr key={f._id} exit={{ opacity: 0, height: 0 }}>
+                      <motion.tr key={fileId || i} exit={{ opacity: 0, height: 0 }}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                             <div style={{
-                              width: '2.2rem', height: '2.2rem', borderRadius: '0.45rem', flexShrink: 0,
-                              background: 'var(--danger-soft)', color: 'var(--danger)',
+                              width: '2rem', height: '2rem', borderRadius: '0.4rem', flexShrink: 0,
+                              background: `color-mix(in srgb, ${color} 14%, transparent)`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '0.58rem', fontWeight: 800,
+                              fontSize: '0.55rem', fontWeight: 800, color
                             }}>
-                              {f.originalName?.split('.').pop()?.toUpperCase()?.slice(0, 3)}
+                              {ext}
                             </div>
                             <div>
-                              <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.875rem' }}>{f.originalName}</p>
-                              <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '0.1rem' }}>v{f.currentVersion || 1}</p>
+                              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{f.originalName}</span>
+                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.1rem' }}>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--danger)' }}>Deleted</span>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -104,12 +109,12 @@ export default function Trash() {
                         <td style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{relativeTime(f.updatedAt)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.4rem' }}>
-                            <motion.button onClick={() => handleRestore(f._id, f.originalName)} className="btn-ghost"
+                            <motion.button onClick={() => handleRestore(fileId, f.originalName)} className="btn-ghost"
                               style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', color: 'var(--success)' }}
                               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                               <RotateCcw size={13} /> Restore
                             </motion.button>
-                            <motion.button onClick={() => handleDelete(f._id, f.originalName)} className="btn-ghost"
+                            <motion.button onClick={() => handleDelete(fileId, f.originalName)} className="btn-ghost"
                               style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', color: 'var(--danger)' }}
                               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                               <X size={13} /> Delete

@@ -3,14 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Check, Trash2, ExternalLink, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/api' })
-api.interceptors.request.use(cfg => {
-  const t = localStorage.getItem('sv_token')
-  if (t) cfg.headers.Authorization = `Bearer ${t}`
-  return cfg
-})
+import api from '../services/api'
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)

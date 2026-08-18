@@ -2,15 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 import { toast } from 'react-toastify'
-import axios from 'axios'
 import { X, QrCode, RefreshCw, ShieldOff, Clock, CheckCircle2, Loader2 } from 'lucide-react'
-
-const api = axios.create({ baseURL: '/api' })
-api.interceptors.request.use(cfg => {
-  const t = localStorage.getItem('sv_token')
-  if (t) cfg.headers.Authorization = `Bearer ${t}`
-  return cfg
-})
+import api from '../services/api'
 
 function CountdownTimer({ expiresAt, onExpired }) {
   const [secondsLeft, setSecondsLeft] = useState(null)
@@ -62,7 +55,8 @@ function QRContent({ file, onClose }) {
     setRevoked(false)
     setSession(null)
     try {
-      const res = await api.post(`/shares/${file._id}/qr`)
+      const fileId = file?._id || file?.id
+      const res = await api.post(`/shares/${fileId}/qr`)
       setSession(res.data.data)
       sessionRef.current = res.data.data
     } catch (err) {

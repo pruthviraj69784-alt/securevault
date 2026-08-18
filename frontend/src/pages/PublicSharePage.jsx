@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Shield, Lock, Download, AlertTriangle, FileText, CheckCircle2, Key, ShieldCheck } from 'lucide-react'
-import axios from 'axios'
 import { toast } from 'react-toastify'
+import api from '../services/api'
 import { processAndSaveDownload } from '../utils/downloadHelper'
-
-const api = axios.create({ baseURL: '/api' })
 
 function formatBytes(b = 0) {
   if (b < 1024) return `${b} B`
