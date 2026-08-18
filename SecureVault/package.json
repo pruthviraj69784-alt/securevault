@@ -1,19 +1,25 @@
 {
     "name": "securevault",
     "version": "1.0.0",
-    "description": "",
+    "description": "Secure Document Sharing Platform with Role-Based Access and Time-Limited Permissions",
     "main": "server.js",
     "scripts": {
         "dev": "nodemon server.js",
-        "build": "prisma generate",
+        "build": "npx prisma generate",
         "start": "node server.js",
         "test": "cross-env NODE_ENV=test jest --runInBand",
         "lint": "node scripts/lint.js",
-        "prisma:generate": "prisma generate",
-        "prisma:push": "prisma db push",
-        "prisma:migrate": "prisma migrate dev"
+        "prisma:generate": "npx prisma generate",
+        "prisma:push": "npx prisma db push",
+        "prisma:migrate": "npx prisma migrate deploy"
     },
-    "keywords": [],
+    "keywords": [
+        "cybersecurity",
+        "secure-file-sharing",
+        "document-sharing",
+        "encryption",
+        "rbac"
+    ],
     "author": "",
     "license": "ISC",
     "type": "commonjs",
@@ -37,23 +43,23 @@
         "multer": "^2.2.0",
         "nodemailer": "^9.0.3",
         "pg": "^8.23.0",
+        "prisma": "^7.9.1",
         "swagger-jsdoc": "^6.3.0",
         "swagger-ui-express": "^5.0.1",
         "winston": "^3.10.0",
         "ws": "^8.21.3"
-    },
-    "jest": {
-        "setupFilesAfterEnv": [
-            "<rootDir>/tests/setup.js"
-        ]
     },
     "devDependencies": {
         "@types/node": "^26.2.0",
         "cross-env": "^10.1.0",
         "jest": "^30.4.2",
         "nodemon": "^3.1.14",
-        "prisma": "^7.9.1",
         "supertest": "^7.2.2",
         "tsx": "^4.23.12"
+    },
+    "jest": {
+        "setupFilesAfterEnv": [
+            "<rootDir>/tests/setup.js"
+        ]
     }
 }
