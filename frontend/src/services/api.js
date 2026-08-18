@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 const resolveApiBaseUrl = () => {
-    const rawBaseUrl = import.meta.env.VITE_API_BASE_URL
+    const rawBaseUrl =
+        import.meta.env.VITE_API_BASE_URL
     const configuredBaseUrl = rawBaseUrl ? rawBaseUrl.trim() : ''
     if (configuredBaseUrl) {
         return configuredBaseUrl.replace(/\/$/, '')
@@ -9,7 +10,7 @@ const resolveApiBaseUrl = () => {
 
     // Auto-detect Render cloud deployment if hosted on *.onrender.com
     if (typeof window !== 'undefined' && window.location.hostname.endsWith('.onrender.com')) {
-        return 'https://securevault-api.onrender.com/api'
+        return 'https://securevault-api-ht52.onrender.com/api'
     }
 
     return '/api'
@@ -50,15 +51,15 @@ export const authApi = {
 }
 
 export const fileApi = {
-    upload: (formData, onProgress) =>
-        api.post('files/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            onUploadProgress: (e) => {
-                if (onProgress) onProgress(Math.round((e.loaded * 100) / e.total))
-            },
-        }),
-    myFiles: () => api.get('files/my-files'),
-    download: (id, ver) => api.get(`files/download/${id}${ver ? `?version=${ver}` : ''}`, { responseType: 'blob' }),
+        upload: (formData, onProgress) =>
+            api.post('files/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (e) => {
+                    if (onProgress) onProgress(Math.round((e.loaded * 100) / e.total))
+                },
+            }),
+        myFiles: () => api.get('files/my-files'),
+        download: (id, ver) => api.get(`files/download/${id}${ver ? `?version=${ver}` : ''}`, { responseType: 'blob' }),
     versions: (id) => api.get(`files/${id}/versions`),
     restore: (id, ver) => api.post(`files/${id}/restore`, { version: ver }),
     remove: (id) => api.delete(`files/${id}`),
