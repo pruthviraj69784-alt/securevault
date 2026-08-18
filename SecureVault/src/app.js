@@ -131,6 +131,8 @@ app.use("/api/shares/internal", internalShareRoutes);
 app.use("/api/shares/requests", accessRequestRoutes);
 app.use("/api/shares", shareRoutes);
 app.use("/api/share", shareRoutes);
+app.use("/shares/internal", internalShareRoutes);
+app.use("/shares/requests", accessRequestRoutes);
 app.use("/shares", shareRoutes);
 app.use("/share", shareRoutes);
 app.use("/api/audit", auditRoutes);
