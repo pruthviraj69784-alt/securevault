@@ -14,16 +14,30 @@ class InternalShareService {
   }
 
   async createInternalShare(ownerId, { recipientEmail, fileId, permission, message, expiresAt, maxDownloads }) {
-    const recipient = await userRepository.findByEmail(recipientEmail);
+    if (!recipientEmail || !recipientEmail.trim()) {
+      throw new AppError("Recipient email or name is required", 400);
+    }
+
+    const trimmedInput = recipientEmail.trim();
+    let recipient = await userRepository.findByEmail(trimmedInput) ||
+                    await userRepository.findByEmail(trimmedInput.toLowerCase());
+
     if (!recipient) {
-      throw new AppError("Recipient user not found in SecureVault", 404);
+      const matchedUsers = await internalShareRepository.searchUsersByEmailOrName(trimmedInput);
+      if (matchedUsers && matchedUsers.length > 0) {
+        recipient = matchedUsers[0];
+      }
+    }
+
+    if (!recipient) {
+      throw new AppError(`Recipient "${trimmedInput}" is not registered in SecureVault.`, 404);
     }
 
     const recipientId = (recipient.id || recipient._id)?.toString();
     const reqOwnerId = (ownerId?.id || ownerId?._id || ownerId)?.toString();
 
     if (recipientId === reqOwnerId) {
-      throw new AppError("Cannot share a file with yourself", 400);
+      throw new AppError("Cannot share a file with yourself. Please choose another registered user.", 400);
     }
 
     const targetFileId = typeof fileId === "object" ? (fileId?.id || fileId?._id) : fileId;
