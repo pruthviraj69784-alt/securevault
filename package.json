@@ -1,0 +1,13 @@
+{
+  "name": "securevault-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SecureVault Enterprise Cloud File Storage",
+  "scripts": {
+    "build": "cd SecureVault && npm install && npx prisma generate",
+    "start": "cd SecureVault && npm start"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
