@@ -1,0 +1,59 @@
+{
+    "name": "securevault",
+    "version": "1.0.0",
+    "description": "",
+    "main": "server.js",
+    "scripts": {
+        "dev": "nodemon server.js",
+        "build": "prisma generate",
+        "start": "node server.js",
+        "test": "cross-env NODE_ENV=test jest --runInBand",
+        "lint": "node scripts/lint.js",
+        "prisma:generate": "prisma generate",
+        "prisma:push": "prisma db push",
+        "prisma:migrate": "prisma migrate dev"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.1085.0",
+        "@prisma/adapter-pg": "^7.9.1",
+        "@prisma/client": "^7.9.1",
+        "@sentry/node": "^8.0.0",
+        "bcrypt": "^6.0.0",
+        "bullmq": "^5.79.2",
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^5.2.1",
+        "express-rate-limit": "^8.5.2",
+        "express-validator": "^7.3.2",
+        "fs-extra": "^11.3.5",
+        "helmet": "^8.2.0",
+        "jsonwebtoken": "^9.0.3",
+        "mongoose": "^9.7.2",
+        "morgan": "^1.11.0",
+        "multer": "^2.2.0",
+        "nodemailer": "^9.0.3",
+        "pg": "^8.23.0",
+        "swagger-jsdoc": "^6.3.0",
+        "swagger-ui-express": "^5.0.1",
+        "winston": "^3.10.0",
+        "ws": "^8.21.3"
+    },
+    "jest": {
+        "setupFilesAfterEnv": [
+            "<rootDir>/tests/setup.js"
+        ]
+    },
+    "devDependencies": {
+        "@types/node": "^26.2.0",
+        "cross-env": "^10.1.0",
+        "jest": "^30.4.2",
+        "nodemon": "^3.1.14",
+        "prisma": "^7.9.1",
+        "supertest": "^7.2.2",
+        "tsx": "^4.23.12"
+    }
+}

@@ -1,0 +1,57 @@
+services:
+  # ─── API Service ─────────────────────────────────────────────────────────────
+  - type: web
+    name: securevault-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false           # Set in Render Dashboard → Environment
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: securevault-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: securevault-redis
+          property: port
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_BUCKET_NAME
+        sync: false
+      - key: CLAMAV_HOST
+        sync: false           # Host of your external ClamAV service
+      - key: CLAMAV_PORT
+        value: 3310
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false           # Set to your frontend URL
+
+  # ─── Redis (BullMQ queues) ───────────────────────────────────────────────────
+  - type: redis
+    name: securevault-redis
+    plan: free
+    maxmemoryPolicy: noeviction

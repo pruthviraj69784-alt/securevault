@@ -1,0 +1,215 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FileCategory {
+  documents
+  images
+  videos
+  others
+}
+
+enum VersionStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum InternalPermission {
+  VIEWER
+  DOWNLOADER
+  EDITOR
+  MANAGER
+}
+
+enum ShareStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id                      String             @id @default(uuid())
+  name                    String
+  email                   String             @unique
+  password                String
+  role                    Role               @default(USER)
+  lastLoginAt             DateTime           @default(now())
+  devices                 Json?              @default("[]")
+  notificationPreferences Json?              @default("{}")
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  files                   File[]
+  externalShares          Share[]
+  sentShares              InternalShare[]    @relation("SentShares")
+  receivedShares          InternalShare[]    @relation("ReceivedShares")
+  accessRequestsSent      AccessRequest[]    @relation("AccessRequestsSent")
+  accessRequestsReceived  AccessRequest[]    @relation("AccessRequestsReceived")
+  auditLogs               Audit[]
+  webhooks                Webhook[]
+  notifications           Notification[]
+}
+
+model File {
+  id             String          @id @default(uuid())
+  ownerId        String
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  originalName   String
+  extension      String
+  currentVersion Int             @default(1)
+  isFavorite     Boolean         @default(false)
+  isTrashed      Boolean         @default(false)
+  trashedAt      DateTime?
+  category       FileCategory    @default(others)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  versions       FileVersion[]
+  externalShares Share[]
+  internalShares InternalShare[]
+  accessRequests AccessRequest[]
+}
+
+model FileVersion {
+  id              String        @id @default(uuid())
+  fileId          String
+  file            File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  version         Int
+  storedName      String
+  s3Key           String
+  size            Int
+  mimeType        String
+  iv              String?
+  hash            String?
+  status          VersionStatus @default(PROCESSING)
+  isZeroKnowledge Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([fileId, version])
+}
+
+model Share {
+  id                String   @id @default(uuid())
+  fileId            String
+  file              File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  token             String   @unique
+  expiresAt         DateTime
+  password          String?
+  maxDownloads      Int      @default(1)
+  downloadCount     Int      @default(0)
+  allowedIP         String?
+  isPasswordEnabled Boolean  @default(false)
+  isOtpEnabled      Boolean  @default(false)
+  otpEmail          String?
+  isOneTimeAccess   Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  version           Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InternalShare {
+  id             String             @id @default(uuid())
+  ownerId        String
+  owner          User               @relation("SentShares", fields: [ownerId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User               @relation("ReceivedShares", fields: [recipientId], references: [id], onDelete: Cascade)
+  fileId         String
+  file           File               @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  permission     InternalPermission @default(DOWNLOADER)
+  status         ShareStatus        @default(PENDING)
+  message        String             @default("")
+  expiresAt      DateTime?
+  maxDownloads   Int?
+  downloadsCount Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model AccessRequest {
+  id          String        @id @default(uuid())
+  fileId      String
+  file        File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  requesterId String
+  requester   User          @relation("AccessRequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  ownerId     String
+  owner       User          @relation("AccessRequestsReceived", fields: [ownerId], references: [id], onDelete: Cascade)
+  note        String        @default("")
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Audit {
+  id           String      @id @default(uuid())
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String
+  status       AuditStatus
+  ip           String
+  userAgent    String?
+  details      Json?
+  previousHash String?
+  recordHash   String?
+  signature    String?
+  createdAt    DateTime    @default(now())
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  url       String
+  events    String[] @default(["FILE_SHARED"])
+  isActive  Boolean  @default(true)
+  secret    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String               @id @default(uuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String               @default("FILE_SHARED")
+  priority  NotificationPriority @default(NORMAL)
+  isRead    Boolean              @default(false)
+  actionUrl String               @default("")
+  metadata  Json?                @default("{}")
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
