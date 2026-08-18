@@ -31,13 +31,14 @@ function CountdownTimer({ expiresAt, onExpired }) {
   )
 }
 
-function getEffectivePayload(rawPayload) {
-  if (!rawPayload) return ''
-  const host = window.location.hostname
-  if (host && host !== 'localhost' && host !== '127.0.0.1') {
-    return rawPayload.replace(/localhost|127\.0\.0\.1/, host)
+function getEffectivePayload(session) {
+  if (!session) return ''
+  const sessionId = session.sessionId
+  const nonce = session.nonce
+  if (sessionId && nonce) {
+    return `${window.location.origin}/qr/scan?sessionId=${sessionId}&nonce=${nonce}`
   }
-  return rawPayload
+  return session.qrPayload || ''
 }
 
 // QR content — shared between inline and modal views
@@ -93,7 +94,7 @@ function QRContent({ file, onClose }) {
   }, [])
 
   const qrSize = 210
-  const payload = getEffectivePayload(session?.qrPayload || '')
+  const payload = getEffectivePayload(session)
 
   return (
     <div className="flex flex-col items-center gap-5">
