@@ -1,3 +1,6 @@
+# Redis binaries (local dev only)
+SecureVault/redis-bin/
+
 # Secrets & Keys
 .env
 .env.local
