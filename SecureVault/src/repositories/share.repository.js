@@ -16,10 +16,13 @@ class ShareRepository {
     }
 
     async createShare(data) {
+        const fileId = typeof data.file === "object" ? (data.file.id || data.file._id) : (data.fileId || data.file);
+        const ownerId = typeof data.owner === "object" ? (data.owner.id || data.owner._id) : (data.ownerId || data.owner);
+
         const share = await prisma.share.create({
             data: {
-                fileId: String(data.file),
-                ownerId: String(data.owner),
+                fileId: String(fileId),
+                ownerId: String(ownerId),
                 token: data.token,
                 expiresAt: data.expiresAt instanceof Date ? data.expiresAt : new Date(data.expiresAt),
                 password: data.password || null,

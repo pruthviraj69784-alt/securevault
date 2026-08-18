@@ -30,9 +30,10 @@ class FileController {
             hash: req.body.hash || req.body["X-Client-Hash"]
         };
 
+        const uid = req.user?.id || req.user?._id;
         const file = await fileService.uploadFile(
             req.file,
-            req.user._id,
+            uid,
             zkMetadata
         );
 
@@ -45,7 +46,8 @@ class FileController {
             message: `File uploaded as Version ${file.currentVersion} — queued for processing`,
             status: "PROCESSING",
             data: {
-                _id: file._id,
+                _id: file.id || file._id,
+                id: file.id || file._id,
                 originalName: file.originalName,
                 currentVersion: file.currentVersion,
                 version: latestVersion
@@ -55,8 +57,8 @@ class FileController {
     });
 
     getMyFiles = asyncHandler(async(req, res) => {
-
-        const files = await fileService.getMyFiles(req.user._id);
+        const uid = req.user?.id || req.user?._id;
+        const files = await fileService.getMyFiles(uid);
 
         res.status(200).json({
             success: true,
@@ -70,10 +72,10 @@ class FileController {
      * Returns the full versions list for a file.
      */
     getVersions = asyncHandler(async(req, res) => {
-
+        const uid = req.user?.id || req.user?._id;
         const data = await fileService.getFileVersions(
             req.params.id,
-            req.user._id
+            uid
         );
 
         res.status(200).json({
@@ -89,9 +91,10 @@ class FileController {
      */
     download = asyncHandler(async(req, res) => {
         const fs = require("fs");
+        const uid = req.user?.id || req.user?._id;
         const result = await fileService.downloadFile(
             req.params.id,
-            req.user._id,
+            uid,
             req.query.version // optional; undefined → currentVersion
         );
 
@@ -158,7 +161,9 @@ class FileController {
     toggleFavorite = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
         const file = await fileRepository.getFileById(req.params.id);
-        if (!file || file.owner.toString() !== req.user._id.toString()) {
+        const uid = (req.user?.id || req.user?._id)?.toString();
+        const owner = (file?.ownerId || file?.owner)?.toString();
+        if (!file || (owner && uid && owner !== uid)) {
             throw new AppError("File not found", 404);
         }
         const updated = await fileRepository.toggleFavorite(req.params.id);
@@ -173,7 +178,8 @@ class FileController {
      */
     getFavorites = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
-        const files = await fileRepository.getFavorites(req.user._id);
+        const uid = req.user?.id || req.user?._id;
+        const files = await fileRepository.getFavorites(uid);
         res.status(200).json({
             success: true,
             data: files
@@ -185,7 +191,8 @@ class FileController {
      */
     getTrash = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
-        const files = await fileRepository.getTrash(req.user._id);
+        const uid = req.user?.id || req.user?._id;
+        const files = await fileRepository.getTrash(uid);
         res.status(200).json({
             success: true,
             data: files
@@ -199,7 +206,9 @@ class FileController {
     moveToTrash = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
         const file = await fileRepository.getFileById(req.params.id);
-        if (!file || file.owner.toString() !== req.user._id.toString()) {
+        const uid = (req.user?.id || req.user?._id)?.toString();
+        const owner = (file?.ownerId || file?.owner)?.toString();
+        if (!file || (owner && uid && owner !== uid)) {
             throw new AppError("File not found", 404);
         }
         const updated = await fileRepository.moveToTrash(req.params.id);
@@ -216,7 +225,9 @@ class FileController {
     restoreFromTrash = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
         const file = await fileRepository.getFileById(req.params.id);
-        if (!file || file.owner.toString() !== req.user._id.toString()) {
+        const uid = (req.user?.id || req.user?._id)?.toString();
+        const owner = (file?.ownerId || file?.owner)?.toString();
+        if (!file || (owner && uid && owner !== uid)) {
             throw new AppError("File not found", 404);
         }
         const updated = await fileRepository.restoreFromTrash(req.params.id);
@@ -232,7 +243,8 @@ class FileController {
      */
     getStorageStats = asyncHandler(async(req, res) => {
         const fileRepository = require("../repositories/file.repository");
-        const stats = await fileRepository.getStorageStats(req.user._id);
+        const uid = req.user?.id || req.user?._id;
+        const stats = await fileRepository.getStorageStats(uid);
         res.status(200).json({
             success: true,
             data: stats

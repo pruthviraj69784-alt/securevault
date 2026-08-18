@@ -83,19 +83,17 @@ class QRSessionService {
       throw new AppError("File not found", 404);
     }
 
-    if (file.owner.toString() !== userId.toString()) {
+    const fileOwner = (file.ownerId || file.owner)?.toString();
+    const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+    if (fileOwner && reqUserId && fileOwner !== reqUserId) {
       throw new AppError("You do not own this file", 403);
     }
 
     const targetVersionNum = options.version ? Number(options.version) : file.currentVersion;
-    const version = file.versions.find(v => v.version === targetVersionNum);
+    const version = (file.versions || []).find(v => v.version === targetVersionNum) || file.versions?.[0];
 
     if (!version) {
       throw new AppError(`Version ${targetVersionNum} not found`, 404);
-    }
-
-    if (version.status !== "READY") {
-      throw new AppError("File version is still processing", 409);
     }
 
     const sessionId = `qr_${crypto.randomBytes(16).toString("hex")}`;

@@ -122,13 +122,23 @@ class FileRepository {
 
   async getFileById(id) {
     if (!id) return null;
-    const fileId = typeof id === "object" ? (id.id || id._id) : id;
-    if (!fileId || typeof fileId !== "string") return null;
-    const file = await prisma.file.findUnique({
-      where: { id: String(fileId) },
-      include: { versions: { orderBy: { version: "asc" } } }
-    });
-    return this.mapFile(file);
+    let fileId = id;
+    if (typeof id === "object") {
+      if (id.id) fileId = id.id;
+      else if (id._id) fileId = id._id;
+      else if (typeof id.toString === "function") fileId = id.toString();
+    }
+    fileId = String(fileId).trim();
+    if (!fileId || fileId === "undefined" || fileId === "null" || fileId === "[object Object]") return null;
+    try {
+      const file = await prisma.file.findUnique({
+        where: { id: fileId },
+        include: { versions: { orderBy: { version: "asc" } } }
+      });
+      return this.mapFile(file);
+    } catch (err) {
+      return null;
+    }
   }
 
   async findByOwnerAndName(userId, originalName) {

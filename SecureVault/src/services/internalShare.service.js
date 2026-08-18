@@ -19,23 +19,28 @@ class InternalShareService {
       throw new AppError("Recipient user not found in SecureVault", 404);
     }
 
-    if ((recipient._id || recipient.id).toString() === ownerId.toString()) {
+    const recipientId = (recipient.id || recipient._id)?.toString();
+    const reqOwnerId = (ownerId?.id || ownerId?._id || ownerId)?.toString();
+
+    if (recipientId === reqOwnerId) {
       throw new AppError("Cannot share a file with yourself", 400);
     }
 
-    const file = await fileRepository.getFileById(fileId);
+    const targetFileId = typeof fileId === "object" ? (fileId?.id || fileId?._id) : fileId;
+    const file = await fileRepository.getFileById(targetFileId);
     if (!file) {
       throw new AppError("File not found", 404);
     }
 
-    if (file.owner.toString() !== ownerId.toString()) {
+    const fileOwner = (file.ownerId || file.owner)?.toString();
+    if (fileOwner && reqOwnerId && fileOwner !== reqOwnerId) {
       throw new AppError("You do not own this file", 403);
     }
 
     const share = await internalShareRepository.createShare({
-      owner: ownerId,
-      recipient: recipient._id,
-      file: fileId,
+      owner: reqOwnerId,
+      recipient: recipientId,
+      file: targetFileId,
       permission: permission || "DOWNLOADER",
       message: message || "",
       expiresAt: expiresAt ? new Date(expiresAt) : null,

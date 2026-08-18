@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const mongoose = require("mongoose");
+const crypto = require("crypto");
 const fileRepository = require("../repositories/file.repository");
 const fileJob = require("../jobs/file.job");
 const storageService = require("./storage.service");
@@ -15,10 +15,11 @@ class FileService {
      * exists for this user, otherwise creating a brand-new file document.
      */
     async uploadFile(file, userId, zkMetadata = {}) {
+        const uid = (userId?.id || userId?._id || userId)?.toString();
 
         // Check whether this user already owns a file with the same name
         const existing = await fileRepository.findByOwnerAndName(
-            userId,
+            uid,
             file.originalname
         );
 
@@ -32,8 +33,9 @@ class FileService {
         if (existing) {
             // ── Version bump ─────────────────────────────────────────────────
             newVersionNumber = existing.currentVersion + 1;
+            const existingId = existing.id || existing._id;
 
-            const s3Key = `files/${existing._id}/v${newVersionNumber}/${file.filename}.enc`;
+            const s3Key = `files/${existingId}/v${newVersionNumber}/${file.filename}.enc`;
 
             const versionEntry = {
                 version:         newVersionNumber,
@@ -47,10 +49,10 @@ class FileService {
                 isZeroKnowledge
             };
 
-            savedFile = await fileRepository.addVersion(existing._id, versionEntry);
+            savedFile = await fileRepository.addVersion(existingId, versionEntry);
 
             await fileJob.process({
-                fileId:      existing._id,
+                fileId:      existingId,
                 path:        file.path,
                 storedName:  file.filename,
                 s3Key,
@@ -60,12 +62,14 @@ class FileService {
         } else {
             // ── Brand-new file ───────────────────────────────────────────────
             newVersionNumber = 1;
-            const fileId  = new mongoose.Types.ObjectId();
+            const fileId  = crypto.randomUUID();
             const s3Key   = `files/${fileId}/v1/${file.filename}.enc`;
 
             const fileData = {
                 _id:            fileId,
-                owner:          userId,
+                id:             fileId,
+                owner:          uid,
+                ownerId:        uid,
                 originalName:   file.originalname,
                 extension:      path.extname(file.originalname),
                 currentVersion: 1,
@@ -106,19 +110,19 @@ class FileService {
      * Return the versions array for a file, checking ownership.
      */
     async getFileVersions(fileId, userId) {
-
         const file = await fileRepository.getFileById(fileId);
-
         if (!file) {
             throw new AppError("File not found", 404);
         }
 
-        if (file.owner.toString() !== userId.toString()) {
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+        if (fileOwner && reqUserId && fileOwner !== reqUserId) {
             throw new AppError("Unauthorized", 403);
         }
 
         return {
-            fileId:         file._id,
+            fileId:         file.id || file._id,
             originalName:   file.originalName,
             currentVersion: file.currentVersion,
             versions:       file.versions
@@ -146,10 +150,13 @@ class FileService {
         }
 
         // ── 2. Authorise ──────────────────────────────────────────────────────
-        const isOwner = file.owner.toString() === userId.toString();
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+        const isOwner = fileOwner && reqUserId && fileOwner === reqUserId;
+
         if (!isOwner) {
             const internalShareRepository = require("../repositories/internalShare.repository");
-            const shares = await internalShareRepository.findReceivedShares(userId);
+            const shares = await internalShareRepository.findReceivedShares(reqUserId);
             const matchingShare = shares.find(s => {
                 const fId = s.file?._id || s.file?.id || s.fileId || s.file;
                 return fId && fId.toString() === fileId.toString() && s.status !== "REVOKED" && s.status !== "DECLINED";
@@ -229,7 +236,9 @@ class FileService {
             throw new AppError("File not found", 404);
         }
 
-        if (file.owner.toString() !== userId.toString()) {
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+        if (fileOwner && reqUserId && fileOwner !== reqUserId) {
             throw new AppError("Unauthorized", 403);
         }
 
@@ -280,7 +289,9 @@ class FileService {
             throw new AppError("File not found", 404);
         }
 
-        if (file.owner.toString() !== userId.toString()) {
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+        if (fileOwner && reqUserId && fileOwner !== reqUserId) {
             throw new AppError("Unauthorized", 403);
         }
 

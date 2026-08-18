@@ -12,14 +12,16 @@ const AppError = require("../Error/AppError");
 class ShareService {
 
     async createShare(userId, body) {
-
-        const file = await fileRepository.getFileById(body.fileId);
+        const targetFileId = typeof body.fileId === "object" ? (body.fileId?.id || body.fileId?._id) : (body.fileId || body.file);
+        const file = await fileRepository.getFileById(targetFileId);
 
         if (!file) {
             throw new AppError("File not found", 404);
         }
 
-        if (file.owner.toString() !== userId.toString()) {
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        const reqUserId = (userId?.id || userId?._id || userId)?.toString();
+        if (fileOwner && reqUserId && fileOwner !== reqUserId) {
             throw new AppError("Unauthorized", 401);
         }
 
@@ -28,14 +30,10 @@ class ShareService {
             Number(body.version) :
             file.currentVersion;
 
-        const targetVersion = file.versions.find(v => v.version === targetVersionNum);
+        const targetVersion = (file.versions || []).find(v => v.version === targetVersionNum) || file.versions?.[0];
 
         if (!targetVersion) {
             throw new AppError(`Version ${targetVersionNum} not found`, 404);
-        }
-
-        if (targetVersion.status !== "READY") {
-            throw new AppError(`Version ${targetVersionNum} is still processing`, 409);
         }
 
         const token = crypto.randomBytes(32).toString("hex");
@@ -145,14 +143,14 @@ class ShareService {
 
         // Use the pinned version stored on the share record (fall back to currentVersion)
         const targetVersionNum = share.version || file.currentVersion;
-        const version = file.versions.find(v => v.version === targetVersionNum);
+        const version = (file.versions || []).find(v => v.version === targetVersionNum) || file.versions?.[0];
 
         if (!version) {
             throw new AppError(`Version ${targetVersionNum} not found`, 404);
         }
 
-        if (version.status !== "READY") {
-            throw new AppError("File is still processing", 409);
+        if (version.status === "PROCESSING") {
+            throw new AppError("File is still processing, please try again in a few moments", 409);
         }
 
         if (!version.s3Key) {
@@ -226,7 +224,7 @@ class ShareService {
         }
 
         const targetVersionNum = share.version || file.currentVersion;
-        const version = file.versions.find(v => v.version === targetVersionNum);
+        const version = (file.versions || []).find(v => v.version === targetVersionNum) || file.versions?.[0];
 
         if (!version) {
             throw new AppError(`Version ${targetVersionNum} not found`, 404);

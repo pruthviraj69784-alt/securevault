@@ -5,9 +5,9 @@ const asyncHandler = require("../utils/asyncHandler");
 class ShareController {
 
     create = asyncHandler(async(req, res) => {
-
+        const uid = req.user?.id || req.user?._id;
         const share = await shareService.createShare(
-            req.user._id,
+            uid,
             req.body
         );
 
@@ -16,7 +16,7 @@ class ShareController {
             message: "Share link created",
             data: {
                 token: share.token,
-                url: `http://localhost:5000/api/shares/${share.token}`
+                url: `/shares/${share.token}`
             }
         });
 

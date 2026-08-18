@@ -17,11 +17,15 @@ class InternalShareRepository {
   }
 
   async createShare(shareData) {
+    const ownerId = typeof shareData.owner === "object" ? (shareData.owner.id || shareData.owner._id) : (shareData.ownerId || shareData.owner);
+    const recipientId = typeof shareData.recipient === "object" ? (shareData.recipient.id || shareData.recipient._id) : (shareData.recipientId || shareData.recipient);
+    const fileId = typeof shareData.file === "object" ? (shareData.file.id || shareData.file._id) : (shareData.fileId || shareData.file);
+
     const created = await prisma.internalShare.create({
       data: {
-        ownerId: String(shareData.owner),
-        recipientId: String(shareData.recipient),
-        fileId: String(shareData.file),
+        ownerId: String(ownerId),
+        recipientId: String(recipientId),
+        fileId: String(fileId),
         permission: shareData.permission || "DOWNLOADER",
         status: shareData.status || "PENDING",
         message: shareData.message || "",

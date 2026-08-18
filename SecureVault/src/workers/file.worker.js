@@ -39,7 +39,7 @@ const worker = new Worker(
                 throw new Error("File metadata not found");
             }
 
-            const versionDoc = file.versions.find(v => v.version === version);
+            const versionDoc = (file.versions || []).find(v => v.version === Number(version)) || file.versions?.[0];
             if (!versionDoc) {
                 throw new Error(`Version ${version} metadata not found`);
             }
