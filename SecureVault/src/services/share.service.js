@@ -134,7 +134,11 @@ class ShareService {
             await redis.del(`otp:${token}`);
         }
 
-        const file = await fileRepository.getFileById(share.file);
+        const fileId = typeof share.file === "object" ? (share.file.id || share.file._id) : (share.fileId || share.file);
+        const file = (typeof share.file === "object" && share.file.versions && share.file.versions.length > 0)
+            ? share.file
+            : await fileRepository.getFileById(fileId);
+
         if (!file) {
             throw new AppError("File not found", 404);
         }
@@ -161,7 +165,7 @@ class ShareService {
         // For zero-knowledge files, the client-encrypted payload is the object we should share.
         // Skip server-side decryption and integrity verification for this pass-through path.
         if (version.isZeroKnowledge) {
-            await shareRepository.incrementDownload(share._id);
+            await shareRepository.incrementDownload(share._id || share.id);
 
             return {
                 path: encryptedTmpPath,
@@ -185,7 +189,7 @@ class ShareService {
         const decryptedPath = await decryptFile(encryptedTmpPath, file.originalName);
         fs.unlink(encryptedTmpPath, () => {});
 
-        await shareRepository.incrementDownload(share._id);
+        await shareRepository.incrementDownload(share._id || share.id);
 
         return {
             path: decryptedPath,
@@ -212,7 +216,11 @@ class ShareService {
         if (share.downloadCount >= share.maxDownloads)
             throw new AppError("Download limit exceeded", 403);
 
-        const file = await fileRepository.getFileById(share.file);
+        const fileId = typeof share.file === "object" ? (share.file.id || share.file._id) : (share.fileId || share.file);
+        const file = (typeof share.file === "object" && share.file.versions && share.file.versions.length > 0)
+            ? share.file
+            : await fileRepository.getFileById(fileId);
+
         if (!file) {
             throw new AppError("File not found", 404);
         }

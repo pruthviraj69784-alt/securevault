@@ -122,8 +122,10 @@ class FileRepository {
 
   async getFileById(id) {
     if (!id) return null;
+    const fileId = typeof id === "object" ? (id.id || id._id) : id;
+    if (!fileId || typeof fileId !== "string") return null;
     const file = await prisma.file.findUnique({
-      where: { id: String(id) },
+      where: { id: String(fileId) },
       include: { versions: { orderBy: { version: "asc" } } }
     });
     return this.mapFile(file);
