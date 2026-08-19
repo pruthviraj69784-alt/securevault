@@ -98,7 +98,7 @@ class QRSessionService {
 
     const sessionId = `qr_${crypto.randomBytes(16).toString("hex")}`;
     const nonce = crypto.randomBytes(16).toString("hex");
-    const ttlSeconds = options.ttlSeconds ? Number(options.ttlSeconds) : 60;
+    const ttlSeconds = options.ttlSeconds ? Number(options.ttlSeconds) : 300;
 
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
 

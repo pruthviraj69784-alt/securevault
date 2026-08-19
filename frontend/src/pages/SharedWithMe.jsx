@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { Users, Download, ShieldCheck, Lock, Clock } from 'lucide-react'
-import { shareApi, fileApi } from '../services/api'
+import { shareApi } from '../services/api'
+import api from '../services/api'
 import { SkeletonTable } from '../components/Skeletons'
 import { useAuth } from '../context/AuthContext'
 import { processAndSaveDownload } from '../utils/downloadHelper'
@@ -37,16 +38,16 @@ export default function SharedWithMe() {
   })
   const shares = data || []
 
-  const handleDownload = async (fileId, name) => {
+  const handleDownload = async (shareId, name) => {
     try {
-      const res = await fileApi.download(fileId)
+      const res = await api.get(`shares/internal/${shareId}/download`, { responseType: 'blob' })
       await processAndSaveDownload(res, name, zkPassphrase)
       toast.success('Download started!')
     } catch (err) {
       if (err.isZeroKnowledge) {
         setPendingZK({ res: err.pendingRes, name: err.finalFilename || name })
       } else {
-        toast.error(err?.message || 'Download failed')
+        toast.error(err?.response?.data?.message || err?.message || 'Download failed')
       }
     }
   }
@@ -86,10 +87,10 @@ export default function SharedWithMe() {
               </thead>
               <tbody>
                 {shares.map((s, i) => {
+                  const shareId = s._id || s.id
                   const sender = s.sharedBy || s.owner || {}
                   const senderName = sender.name || sender.email || 'Team Member'
                   const fileObj = s.file || {}
-                  const fileId = fileObj._id || fileObj.id || s.fileId
                   const fileName = fileObj.originalName || 'Shared Document'
                   const latestVer = fileObj.versions?.[fileObj.versions.length - 1]
                   const fileSize = latestVer?.size || fileObj.size || 0
@@ -130,7 +131,7 @@ export default function SharedWithMe() {
                         </span>
                       </td>
                       <td>
-                        <button onClick={() => handleDownload(fileId, fileName)} className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
+                        <button onClick={() => handleDownload(shareId, fileName)} className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                           <Download size={13} /> Download
                         </button>
                       </td>

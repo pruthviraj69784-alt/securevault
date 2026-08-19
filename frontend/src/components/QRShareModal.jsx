@@ -113,7 +113,7 @@ function QRContent({ file, onClose }) {
             <Clock size={28} className="text-red-400" />
           </div>
           <p className="text-sm font-semibold text-red-400">QR Session Expired</p>
-          <p className="text-xs text-muted text-center">The 60-second window has passed.</p>
+          <p className="text-xs text-muted text-center">The 5-minute window has passed.</p>
           <button onClick={generateSession} className="btn-primary flex items-center gap-2">
             <RefreshCw size={15} /> Generate New QR
           </button>
