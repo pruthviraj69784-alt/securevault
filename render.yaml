@@ -7,7 +7,7 @@ projects:
           - type: web
             name: securevault-api
             runtime: node
-            repo: https://github.com/pruthviraj69784-alt/securevault
+            repo: https://github.com/pruthviraj69784-alt/HV2026-0078_UDHBAV
             plan: free
             region: oregon
             rootDir: SecureVault
@@ -46,7 +46,7 @@ projects:
           - type: web
             name: securevault-app
             runtime: static
-            repo: https://github.com/pruthviraj69784-alt/securevault
+            repo: https://github.com/pruthviraj69784-alt/HV2026-0078_UDHBAV
             plan: free
             region: oregon
             rootDir: frontend
