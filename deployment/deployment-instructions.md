@@ -1,5 +1,5 @@
 # HACKVERSE 2026 — Deployment Instructions
-## Team HV2026-0078 | UDHBAV | SecureVault
+## SecureVault production deployment
 
 ---
 
@@ -43,7 +43,7 @@
 ### Step 2: Deploy Backend
 
 1. Go to **New → Web Service**
-2. Connect GitHub repo → select this repository
+2. Connect GitHub repository `pruthviraj69784-alt/securevault`
 3. Settings:
    - **Root Directory**: `SecureVault`
    - **Build Command**: `npm install && npx prisma migrate deploy`
@@ -71,7 +71,7 @@ FRONTEND_URL         = https://securevault-app.onrender.com
 ### Step 3: Deploy Frontend
 
 1. Go to **New → Static Site**
-2. Connect same GitHub repo
+2. Connect the same `pruthviraj69784-alt/securevault` repository
 3. Settings:
    - **Root Directory**: `frontend`
    - **Build Command**: `npm install && npm run build`
@@ -79,7 +79,7 @@ FRONTEND_URL         = https://securevault-app.onrender.com
 
 4. Add Environment Variable:
 ```
-VITE_API_URL = https://securevault-api.onrender.com/api
+VITE_API_BASE_URL = https://securevault-api.onrender.com/api
 ```
 
 ---
@@ -100,8 +100,8 @@ curl https://securevault-api.onrender.com/health
 
 ```bash
 # 1. Clone
-git clone https://github.com/HACKVERSE-2026/HV-0078-UDHBAV.git
-cd HV-0078-UDHBAV
+git clone https://github.com/pruthviraj69784-alt/securevault.git
+cd securevault
 
 # 2. Backend
 cd SecureVault
@@ -115,7 +115,7 @@ npm run dev        # Starts on port 5000
 cd ../frontend
 npm install
 cp .env.example .env
-# Set VITE_API_URL=http://localhost:5000/api
+# Set VITE_API_BASE_URL=http://localhost:5000/api
 npm run dev        # Starts on port 3000
 ```
 
