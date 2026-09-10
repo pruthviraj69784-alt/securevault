@@ -1195,6 +1195,127 @@ select.input-field {
     }
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE-FIRST OVERRIDES (phones & small tablets)
+════════════════════════════════════════════════════════════ */
+
+
+/* iOS Safari zooms into any input with font-size < 16px */
+
+@media (max-width: 760px) {
+    .input-field,
+    .topbar-search input,
+    select.input-field,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+
+/* Floating action button — mobile shortcut to Upload */
+
+.mobile-fab {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    /* Safe areas for notched devices */
+    .topbar {
+        padding-top: max(0.55rem, env(safe-area-inset-top));
+    }
+    .mobile-fab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(1.25rem, env(safe-area-inset-bottom));
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 9999px;
+        border: none;
+        cursor: pointer;
+        z-index: 45;
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: #fff;
+        box-shadow: 0 8px 24px var(--accent-glow), 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .mobile-fab:active {
+        transform: scale(0.94);
+    }
+    /* Comfortable minimum tap targets */
+    .btn-icon,
+    .topbar-icon,
+    .mobile-nav-toggle {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    /* File cards: 1–2 columns that track width */
+    .file-grid-responsive {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 155px), 1fr)) !important;
+        gap: 0.75rem !important;
+    }
+    .file-preview-card {
+        padding: 0.85rem;
+    }
+    /* Filters stack vertically and go full width */
+    .filters-responsive {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .filters-responsive>* {
+        max-width: none !important;
+        width: 100%;
+    }
+    /* Modals slide up like bottom sheets instead of floating boxes */
+    .modal-sheet {
+        max-height: calc(100dvh - 2rem) !important;
+        max-width: none !important;
+        width: 100% !important;
+        border-radius: 1rem 1rem 0 0 !important;
+    }
+    .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+    .modal-sheet .card,
+    .card-in-sheet {
+        padding: 1.1rem 1rem !important;
+    }
+    /* Drawer should not inherit desktop collapse width animation */
+    .app-sidebar {
+        width: min(260px, 86vw) !important;
+    }
+    /* Buttons stretch in stacked headers */
+    .page-header>.page-header-actions {
+        width: 100%;
+    }
+    .page-header>.page-header-actions>* {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .topbar {
+        padding-inline: 0.65rem;
+    }
+    .topbar-profile {
+        padding-inline: 0;
+    }
+    .app-content {
+        padding-inline: 0.7rem;
+    }
+    .page-title {
+        font-size: 1.35rem;
+    }
+    .page-sub {
+        font-size: 0.8rem;
+    }
+}
+
 @media (max-width: 700px) {
     .topbar {
         padding: 0.55rem 0.875rem;
