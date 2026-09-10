@@ -5,6 +5,7 @@ const fileRepository = require("../repositories/file.repository");
 const storageService = require("../services/storage.service");
 const { encryptFile, calculateFileHash } = require("../utils/encryption.util");
 const logger = require("../utils/logger");
+const dpdpService = require("../services/dpdp.service");
 
 /**
  * File Processing Worker — full pipeline per job:
@@ -28,7 +29,7 @@ const worker = new Worker(
     "file-processing",
 
     async (job) => {
-        const { fileId, path: localPath, storedName, version } = job.data;
+        const { fileId, path: localPath, storedName, version, mimeType: jobMimeType, userId } = job.data;
 
         logger.info(`[WORKER] Job ${job.id} started — fileId: ${fileId}, version: ${version}`);
 
@@ -71,16 +72,25 @@ const worker = new Worker(
                 logger.info(`[WORKER] Zero-Knowledge Step 5 ✓ MongoDB updated to READY`);
 
             } else {
-                // ── Step 1: Encrypt ──────────────────────────────────────────────
+                // ── Step 1: DPDP PII Scan (before encryption, on original file) ─
+                try {
+                    const mimeType = jobMimeType || "application/octet-stream";
+                    await dpdpService.scanAndRedact(fileId, localPath, mimeType, userId);
+                    logger.info(`[WORKER] Step 0 ✓ DPDP PII scan complete for file ${fileId}`);
+                } catch (scanErr) {
+                    logger.warn(`[WORKER] DPDP scan skipped: ${scanErr.message}`);
+                }
+
+                // ── Step 2: Encrypt ──────────────────────────────────────────────
                 const encrypted = await encryptFile(localPath);
                 encryptedPath = encrypted.path;
                 logger.info(`[WORKER] Step 1 ✓ Encrypted → ${encrypted.path}`);
 
-                // ── Step 2: Generate SHA-256 ─────────────────────────────────────
+                // ── Step 3: Generate SHA-256 ─────────────────────────────────────
                 hash = await calculateFileHash(encrypted.path);
                 logger.info(`[WORKER] Step 2 ✓ SHA-256: ${hash}`);
 
-                // ── Step 3: Upload to AWS S3 ─────────────────────────────────────
+                // ── Step 4: Upload to AWS S3 ─────────────────────────────────────
                 s3Key = await storageService.uploadFile(
                     encrypted.path,
                     job.data.s3Key || storedName

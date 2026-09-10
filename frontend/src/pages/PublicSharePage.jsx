@@ -5,6 +5,7 @@ import { Shield, Lock, Download, AlertTriangle, FileText, CheckCircle2, Key, Shi
 import { toast } from 'react-toastify'
 import api from '../services/api'
 import { processAndSaveDownload } from '../utils/downloadHelper'
+import ZKPromptModal from '../components/ZKPromptModal'
 
 function formatBytes(b = 0) {
   if (b < 1024) return `${b} B`
@@ -24,6 +25,7 @@ export default function PublicSharePage() {
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [pendingZK, setPendingZK] = useState(null)
 
   useEffect(() => {
     fetchShareInfo()
@@ -42,13 +44,17 @@ export default function PublicSharePage() {
     }
   }
 
-  const handleDownload = async () => {
+  const handleDownload = async (passphraseOverride = '') => {
     setDownloading(true)
     try {
       const res = await api.post(`/shares/${token}/access`, { password, otp }, { responseType: 'blob' })
-      await processAndSaveDownload(res, shareInfo?.fileName || 'download')
+      await processAndSaveDownload(res, shareInfo?.fileName || 'download', passphraseOverride)
       toast.success('Download started!')
     } catch (err) {
+      if (err.isZeroKnowledge) {
+        setPendingZK({ res: err.pendingRes, name: err.finalFilename || shareInfo?.fileName || 'Encrypted File' })
+        return
+      }
       if (err.response?.data instanceof Blob) {
         const text = await err.response.data.text()
         try {
@@ -62,6 +68,17 @@ export default function PublicSharePage() {
       }
     } finally {
       setDownloading(false)
+    }
+  }
+
+  const handleZKConfirm = async (passphrase) => {
+    if (!pendingZK) return
+    try {
+      await processAndSaveDownload(pendingZK.res, pendingZK.name, passphrase)
+      toast.success('Decrypted and downloaded successfully!')
+      setPendingZK(null)
+    } catch (err) {
+      toast.error(err.message || 'Decryption failed. Please verify your passphrase.')
     }
   }
 
@@ -219,6 +236,12 @@ export default function PublicSharePage() {
           </div>
         )}
       </motion.div>
+      <ZKPromptModal
+        isOpen={Boolean(pendingZK)}
+        fileName={pendingZK?.name}
+        onConfirm={handleZKConfirm}
+        onCancel={() => setPendingZK(null)}
+      />
     </div>
   )
 }

@@ -21,6 +21,8 @@ const internalShareRoutes = require("./routes/internalShare.routes");
 const accessRequestRoutes = require("./routes/accessRequest.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const qrSessionRoutes = require("./routes/qrSession.routes");
+const dpdpRoutes = require("./routes/dpdp.routes");
+const dlpRoutes = require("./routes/dlp.routes");
 
 const { metricsMiddleware } = require("./utils/metrics");
 const errorMiddleware = require("./middleware/error.middleware");
@@ -75,7 +77,7 @@ const corsOptions = {
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
-    exposedHeaders: ["Content-Disposition", "X-Zero-Knowledge", "X-File-IV", "Content-Type"]
+    exposedHeaders: ["Content-Disposition", "X-Zero-Knowledge", "X-File-IV", "X-Is-Masked", "Content-Type"]
 };
 
 // Middlewares
@@ -145,6 +147,10 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/api/qr", qrSessionRoutes);
 app.use("/qr", qrSessionRoutes);
+app.use("/api/dpdp", dpdpRoutes);
+app.use("/dpdp", dpdpRoutes);
+app.use("/api/dlp", dlpRoutes);
+app.use("/dlp", dlpRoutes);
 
 // 404 Handler
 app.use((req, res) => {

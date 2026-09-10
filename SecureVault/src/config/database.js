@@ -1,8 +1,14 @@
 const prisma = require("./prisma");
 
-const connectDB = async () => {
+const connectDB = async() => {
     try {
-        await prisma.$connect();
+        const timeoutMs = Number(process.env.DB_CONNECT_TIMEOUT_MS || 2000);
+        const connectPromise = prisma.$connect();
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("PostgreSQL connection timed out")), timeoutMs);
+        });
+
+        await Promise.race([connectPromise, timeoutPromise]);
 
         if (process.env.NODE_ENV !== "test") {
             console.log("✅ PostgreSQL Connected via Prisma");

@@ -1,6 +1,11 @@
 import axios from 'axios'
 
 const resolveApiBaseUrl = () => {
+    // When running locally on localhost or 127.0.0.1, proxy through Vite's local /api -> port 5000
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return '/api'
+    }
+
     const rawBaseUrl =
         import.meta.env.VITE_API_BASE_URL ||
         import.meta.env.VITE_API_URL
@@ -119,6 +124,25 @@ export const adminApi = {
 
 export const healthApi = {
   check: () => api.get('health'),
+}
+
+export const dpdpApi = {
+  preview: (formData) => api.post('dpdp/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  consents: (status) => api.get(`dpdp/consents${status ? `?status=${status}` : ''}`),
+  createConsent: (data) => api.post('dpdp/consents', data),
+  revokeConsent: (id, reason) => api.post(`dpdp/consents/${id}/revoke`, { reason }),
+  purgeData: (id) => api.delete(`dpdp/consents/${id}/purge`),
+  auditTrail: (id) => api.get(`dpdp/consents/${id}/audit-trail`),
+  logAccess: (id, data) => api.post(`dpdp/consents/${id}/access-log`, data),
+}
+
+export const dlpApi = {
+  alerts: (params) => api.get('dlp/alerts', { params }),
+  metrics: () => api.get('dlp/metrics'),
+  mitigate: (id, action, note) => api.post(`dlp/alerts/${id}/mitigate`, { action, note }),
+  complianceReport: () => api.get('dlp/compliance-report'),
 }
 
 export default api

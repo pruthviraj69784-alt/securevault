@@ -220,6 +220,8 @@ See [`deployment/deployment-instructions.md`](deployment/deployment-instructions
 > Add screenshots in `assets/screenshots/`
 
 | Screen | Description |
+
+
 |---|---|
 | Dashboard | File manager with storage stats |
 | Upload | Drag-and-drop with ZK encryption toggle |

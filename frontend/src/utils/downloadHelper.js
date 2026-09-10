@@ -22,6 +22,8 @@ export function getFilenameFromHeaders(headers, fallbackName = 'downloaded-file'
 export function ensureExtension(filename, mimeType) {
   if (filename && filename.includes('.')) return filename
 
+  const cleanMime = (mimeType || '').split(';')[0].trim().toLowerCase()
+
   const extMap = {
     'application/pdf': '.pdf',
     'image/png': '.png',
@@ -39,18 +41,27 @@ export function ensureExtension(filename, mimeType) {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
   }
 
-  const ext = extMap[mimeType] || ''
+  const ext = extMap[cleanMime] || ''
   return filename ? `${filename}${ext}` : `file${ext || '.bin'}`
 }
 
 export async function processAndSaveDownload(res, defaultFilename = 'downloaded-file', zkPassphrase = '') {
   const headers = res.headers || {}
   const isZK = getHeader(headers, 'x-zero-knowledge') === 'true'
+  const isMaskedHeader = getHeader(headers, 'x-is-masked') === 'true'
   const ivHex = getHeader(headers, 'x-file-iv') || ''
-  const contentType = getHeader(headers, 'content-type') || 'application/octet-stream'
+  const rawContentType = getHeader(headers, 'content-type') || 'application/octet-stream'
+  const contentType = rawContentType.split(';')[0].trim().toLowerCase()
 
   let finalFilename = getFilenameFromHeaders(headers, defaultFilename)
   finalFilename = ensureExtension(finalFilename, contentType)
+
+  // Smart prefix adjustment:
+  if ((isMaskedHeader || defaultFilename.startsWith('MASKED_')) && !finalFilename.startsWith('REDACTED_') && !finalFilename.startsWith('MASKED_')) {
+    finalFilename = `MASKED_${finalFilename}`
+  } else if (defaultFilename.startsWith('ORIGINAL_') && finalFilename.startsWith('REDACTED_')) {
+    finalFilename = finalFilename.replace(/^REDACTED_/, '')
+  }
 
   let blob = res.data
   if (!(blob instanceof Blob)) {
@@ -68,9 +79,9 @@ export async function processAndSaveDownload(res, defaultFilename = 'downloaded-
     }
   }
 
-  // Inspect first 100 bytes for JSON error payload
+  // Inspect first 120 bytes for JSON error payload
   try {
-    const textHeader = await blob.slice(0, 100).text()
+    const textHeader = await blob.slice(0, 120).text()
     if (textHeader.trim().startsWith('{"success":false') || textHeader.trim().startsWith('{"error"')) {
       const fullText = await blob.text()
       const json = JSON.parse(fullText)

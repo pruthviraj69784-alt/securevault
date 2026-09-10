@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, HardDrive, ShieldCheck, Cpu, Webhook,
-  ClipboardList, Sliders, LogOut, Sun, Moon, ChevronLeft, Menu, Shield, QrCode
+  ClipboardList, Sliders, LogOut, Sun, Moon, ChevronLeft, Menu, Shield, QrCode, Activity, FileSearch
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -14,6 +14,8 @@ const NAV = [
   { to: '/storage', icon: HardDrive, label: 'Storage' },
   { to: '/security', icon: ShieldCheck, label: 'Security Center' },
   { to: '/qr', icon: QrCode, label: 'QR Telemetry' },
+  { to: '/dpdp', icon: FileSearch, label: 'DPDP Compliance' },
+  { to: '/dlp', icon: Activity, label: 'DLP Monitor' },
   { to: '/queues', icon: Cpu, label: 'Queue Monitor' },
   { to: '/webhooks', icon: Webhook, label: 'Webhook Monitor' },
   { to: '/audits', icon: ClipboardList, label: 'Audit Explorer' },

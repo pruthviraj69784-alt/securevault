@@ -51,6 +51,8 @@ desktop.ini
 SecureVault/uploads/
 SecureVault/temp/
 SecureVault/tmp/
+SecureVault/test-upload*.txt
+SecureVault/eng.traineddata
 
 # Redis dump
 dump.rdb

@@ -4,6 +4,7 @@ const { GENESIS_HASH, computeRecordHash, computeRecordSignature } = require("../
 class AuditRepository {
     async create(data) {
         const userId = data.user ? String(data.user) : null;
+        const validStatus = (data.status === "FAILED" || data.status === "ERROR") ? "FAILED" : "SUCCESS";
 
         // Find the latest audit record with a valid recordHash for chain continuity
         const lastEntry = await prisma.audit.findFirst({
@@ -21,7 +22,7 @@ class AuditRepository {
         const recordHash = computeRecordHash({
             userId,
             action: data.action,
-            status: data.status || "SUCCESS",
+            status: validStatus,
             ip: data.ip || "127.0.0.1",
             createdAt: now,
             previousHash,
@@ -34,7 +35,7 @@ class AuditRepository {
             data: {
                 userId,
                 action: data.action,
-                status: data.status || "SUCCESS",
+                status: validStatus,
                 ip: data.ip || "127.0.0.1",
                 userAgent: data.userAgent || null,
                 details: data.details || {},

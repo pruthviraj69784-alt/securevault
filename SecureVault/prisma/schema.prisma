@@ -77,6 +77,8 @@ model User {
   auditLogs               Audit[]
   webhooks                Webhook[]
   notifications           Notification[]
+  consentRecords          ConsentRecord[]
+  dlpAlerts               DlpAlert[]
 }
 
 model File {
@@ -90,6 +92,13 @@ model File {
   isTrashed      Boolean         @default(false)
   trashedAt      DateTime?
   category       FileCategory    @default(others)
+  hasSensitiveData Boolean       @default(false)
+  isRedacted       Boolean       @default(false)
+  sensitiveTypes   String[]      @default([])
+  maskedAadhaar    String?
+  redactionDetails Json?         @default("{}")
+  dpdpRetentionDays Int?         @default(365)
+  dpdpExpiresAt    DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -97,6 +106,8 @@ model File {
   externalShares Share[]
   internalShares InternalShare[]
   accessRequests AccessRequest[]
+  consentRecords ConsentRecord[]
+  dlpAlerts      DlpAlert[]
 }
 
 model FileVersion {
@@ -135,6 +146,7 @@ model Share {
   otpEmail          String?
   isOneTimeAccess   Boolean  @default(false)
   isActive          Boolean  @default(true)
+  autoMask          Boolean  @default(true)
   version           Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -154,6 +166,7 @@ model InternalShare {
   expiresAt      DateTime?
   maxDownloads   Int?
   downloadsCount Int                @default(0)
+  autoMask       Boolean            @default(true)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 }
@@ -213,3 +226,87 @@ model Notification {
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 }
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+  EXPIRED
+}
+
+enum DlpSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DlpChannel {
+  PUBLIC_LINK
+  INTERNAL_SHARE
+  QR_SCAN
+  DIRECT_DOWNLOAD
+  BULK_EXPORT
+}
+
+enum DlpStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  BLOCKED
+}
+
+model ConsentRecord {
+  id               String             @id @default(uuid())
+  fileId           String
+  file             File               @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataSubjectName  String
+  dataSubjectEmail String?
+  dataSubjectPhone String?
+  purpose          String             // e.g. "Identity Verification", "KYC / Admissions", "Medical Billing"
+  lawfulBasis      String             @default("EXPLICIT_CONSENT")
+  status           ConsentStatus      @default(GRANTED)
+  grantedAt        DateTime           @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  retentionNotice  String?
+  accessLogs       ConsentAccessLog[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model ConsentAccessLog {
+  id               String        @id @default(uuid())
+  consentId        String
+  consent          ConsentRecord @relation(fields: [consentId], references: [id], onDelete: Cascade)
+  accessedByUserId String?
+  accessedByName   String        @default("Authorized Staff")
+  action           String        // "VIEW", "DOWNLOAD", "SHARE", "REDACT", "DELETE"
+  purpose          String
+  ipAddress        String
+  userAgent        String?
+  timestamp        DateTime      @default(now())
+}
+
+model DlpAlert {
+  id             String      @id @default(uuid())
+  fileId         String?
+  file           File?       @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  channel        DlpChannel
+  severity       DlpSeverity
+  ruleTriggered  String      // "PII_PUBLIC_LEAK", "MASS_DOWNLOAD_ANOMALY", "OFF_HOURS_ACCESS", "ANONYMOUS_UNENCRYPTED_SHARE"
+  description    String
+  riskScore      Int         // 0 to 100
+  ipAddress      String
+  userAgent      String?
+  metadata       Json?       @default("{}")
+  status         DlpStatus   @default(OPEN)
+  mitigationNote String?
+  resolvedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+

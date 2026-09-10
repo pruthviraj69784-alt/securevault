@@ -182,6 +182,12 @@ class AdminController {
     });
 
     updateUserRole = asyncHandler(async(req, res) => {
+        if (req.user && (req.user.id === req.params.id || req.user._id === req.params.id) && req.body.role?.toUpperCase() !== "ADMIN") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot demote your own administrator account."
+            });
+        }
         const adminRepository = require("../repositories/admin.repository");
         const data = await adminRepository.updateUserRole(req.params.id, req.body.role);
         res.json({ success: true, data });

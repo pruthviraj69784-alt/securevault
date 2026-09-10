@@ -30,7 +30,8 @@ class InternalShareRepository {
         status: shareData.status || "PENDING",
         message: shareData.message || "",
         expiresAt: shareData.expiresAt ? (shareData.expiresAt instanceof Date ? shareData.expiresAt : new Date(shareData.expiresAt)) : null,
-        maxDownloads: shareData.maxDownloads !== undefined && shareData.maxDownloads !== null && shareData.maxDownloads !== "" ? Number(shareData.maxDownloads) : null
+        maxDownloads: shareData.maxDownloads !== undefined && shareData.maxDownloads !== null && shareData.maxDownloads !== "" ? Number(shareData.maxDownloads) : null,
+        autoMask: shareData.autoMask !== undefined ? Boolean(shareData.autoMask) : true
       }
     });
     return this.mapShare(created);

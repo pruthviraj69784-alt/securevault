@@ -2,9 +2,9 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Files, Star, Trash2, Upload, Share2, ClipboardList,
-  Webhook, Shield, ShieldCheck, User, Settings, LogOut, Sun, Moon,
+  Webhook, Shield, ShieldCheck, ShieldAlert, User, Settings, LogOut, Sun, Moon,
   ChevronLeft, Menu, Users, Key, Bell, Search, Command, ChevronDown,
-  Sparkles
+  Sparkles, Fingerprint
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth }  from '../context/AuthContext'
@@ -22,11 +22,15 @@ const NAV = [
   { to: '/upload',          icon: Upload,          label: 'Upload',          section: 'WORKSPACE' },
   { to: '/notifications',   icon: Bell,            label: 'Notifications',   section: 'WORKSPACE' },
   { to: '/security',        icon: ShieldCheck,     label: 'Security Center', section: 'SECURITY' },
+  { to: '/consent',         icon: Fingerprint,     label: 'DPDP & Privacy',  section: 'SECURITY' },
   { to: '/audit',           icon: ClipboardList,   label: 'Audit Logs',      section: 'SECURITY' },
   { to: '/webhooks',        icon: Webhook,         label: 'Webhooks',        section: 'SECURITY' },
 ]
 
-const ADMIN_NAV = [{ to: '/admin', icon: Shield, label: 'Admin Panel' }]
+const ADMIN_NAV = [
+  { to: '/admin', icon: Shield,      label: 'Admin Panel' },
+  { to: '/dlp',   icon: ShieldAlert, label: 'DLP Monitor' },
+]
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg,#7c4dff,#5628d9)',

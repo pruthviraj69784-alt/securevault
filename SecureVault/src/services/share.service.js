@@ -36,6 +36,10 @@ class ShareService {
             throw new AppError(`Version ${targetVersionNum} not found`, 404);
         }
 
+        if (targetVersion.status === "PROCESSING") {
+            throw new AppError("File is still undergoing security scanning and sensitive data masking. Please wait a moment until processing completes before sharing.", 409);
+        }
+
         const token = crypto.randomBytes(32).toString("hex");
 
         let password = null;
@@ -62,9 +66,18 @@ class ShareService {
             password,
             maxDownloads: body.maxDownloads !== undefined && body.maxDownloads !== null && body.maxDownloads !== "" ? Number(body.maxDownloads) : 1,
             allowedIP: body.allowedIP || null,
+            autoMask: body.autoMask !== false,
             // Store the pinned version so the share always serves the same content
             version: targetVersionNum
         });
+
+        if (body.autoMask !== false && (file.hasSensitiveData || body.isRedacted)) {
+            const prisma = require("../config/prisma");
+            await prisma.file.update({
+                where: { id: file.id || file._id },
+                data: { isRedacted: true, hasSensitiveData: true }
+            }).catch(() => {});
+        }
 
         // Trigger Webhook Event asynchronously
         const userRepository = require("../repositories/user.repository");
@@ -83,6 +96,28 @@ class ShareService {
             .catch(err => {
                 logger.error(`[WEBHOOK ERROR] Error trigger webhook: ${err.message}`);
             });
+
+        // Evaluate DLP risks asynchronously (PS5)
+        try {
+            const dlpService = require("./dlp.service");
+            dlpService.evaluateShare({
+                file,
+                share: {
+                    ...share,
+                    isPasswordEnabled: !!body.password,
+                    isOtpEnabled: !!body.isOtpRequired || !!body.requireOtp
+                },
+                userId,
+                clientInfo: {
+                    ip: body.ip || "127.0.0.1",
+                    userAgent: body.userAgent || null
+                }
+            }).catch(err => {
+                logger.warn(`[DLP] Share evaluation error: ${err.message}`);
+            });
+        } catch (e) {
+            logger.warn(`[DLP] Evaluation init failed: ${e.message}`);
+        }
 
         return share;
 
@@ -187,11 +222,33 @@ class ShareService {
         const decryptedPath = await decryptFile(encryptedTmpPath, file.originalName);
         fs.unlink(encryptedTmpPath, () => {});
 
+        // Automatically mask sensitive data for external recipient if share.autoMask is enabled
+        const shouldMask = share.autoMask !== false && (file.hasSensitiveData || file.isRedacted);
+        if (shouldMask) {
+            const { maskFileForSharing } = require("../utils/redactor.util");
+            // Pull precise AI bounding boxes stored at upload-time scan
+            const rd = file.redactionDetails || {};
+            await maskFileForSharing(decryptedPath, version.mimeType, {
+                file,
+                hasPII:        file.hasSensitiveData || file.isRedacted,
+                types:         file.sensitiveTypes || rd.types || [],
+                documentType:  rd.documentType || "UNKNOWN",
+                // These carry the exact bounding boxes from the AI scan
+                findings:      rd.findings  || [],
+                maskZones:     rd.maskZones || [],
+                maskedAadhaar: file.maskedAadhaar || rd.maskedAadhaar || null
+            });
+        }
+
         await shareRepository.incrementDownload(share._id || share.id);
+
+        const filename = shouldMask ? `REDACTED_${file.originalName}` : file.originalName;
 
         return {
             path: decryptedPath,
-            filename: file.originalName,
+            filename,
+            originalName: file.originalName,
+            isMasked: shouldMask,
             mimeType: version.mimeType || "application/octet-stream",
             isZeroKnowledge: false,
             iv: version.iv
@@ -234,7 +291,9 @@ class ShareService {
             fileName: file.originalName,
             fileSize: version.size,
             isPasswordRequired: !!share.password,
-            isOtpRequired: !!share.isOtpEnabled
+            isOtpRequired: !!share.isOtpEnabled,
+            isZeroKnowledge: !!version.isZeroKnowledge,
+            autoMask: share.autoMask !== false
         };
     }
 

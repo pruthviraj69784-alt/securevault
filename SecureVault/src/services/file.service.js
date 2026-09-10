@@ -53,6 +53,8 @@ class FileService {
 
             await fileJob.process({
                 fileId:      existingId,
+                userId:      uid,
+                mimeType:    file.mimetype,
                 path:        file.path,
                 storedName:  file.filename,
                 s3Key,
@@ -92,6 +94,8 @@ class FileService {
 
             await fileJob.process({
                 fileId:     fileId,
+                userId:     uid,
+                mimeType:   file.mimetype,
                 path:       file.path,
                 storedName: file.filename,
                 s3Key,
@@ -140,7 +144,7 @@ class FileService {
      *   5. Decrypt (unless file is Zero-Knowledge encrypted)
      *   6. Return decrypted path (or raw encrypted path for ZK) + original filename
      */
-    async downloadFile(fileId, userId, versionNumber) {
+    async downloadFile(fileId, userId, versionNumber, clientInfo = {}) {
 
         // ── 1. Fetch metadata ─────────────────────────────────────────────────
         const file = await fileRepository.getFileById(fileId);
@@ -166,6 +170,18 @@ class FileService {
                 throw new AppError("Unauthorized", 403);
             }
         }
+
+        // Evaluate DLP risks asynchronously (PS5)
+        try {
+            const dlpService = require("./dlp.service");
+            dlpService.evaluateDownload({
+                file,
+                userId: reqUserId,
+                clientInfo
+            }).catch(err => {
+                logger.warn(`[DLP] Download evaluation error: ${err.message}`);
+            });
+        } catch (e) {}
 
         // Resolve target version number
         const targetVersionNum = versionNumber
@@ -214,10 +230,40 @@ class FileService {
         const decryptedPath = await decryptFile(encryptedTmpPath, file.originalName);
         fs.unlink(encryptedTmpPath, () => {});
 
+        // Automatically mask sensitive data if:
+        // 1. Client explicitly requested masked copy (clientInfo?.masked === true)
+        // 2. Client did not explicitly request raw unmask (clientInfo?.masked !== false) AND:
+        //    - It is a non-owner downloading a file with sensitive data or redaction flag
+        const isExplicitUnmask = clientInfo?.masked === false;
+        const shouldMask = !isExplicitUnmask && (
+            clientInfo?.masked === true ||
+            (!isOwner && (file.isRedacted || file.hasSensitiveData))
+        );
+
+        if (shouldMask) {
+            const { maskFileForSharing } = require("../utils/redactor.util");
+            // Pull precise AI bounding boxes stored at upload-time scan
+            const rd = file.redactionDetails || {};
+            await maskFileForSharing(decryptedPath, version.mimeType, {
+                file,
+                hasPII:        file.hasSensitiveData || file.isRedacted,
+                types:         file.sensitiveTypes || rd.types || [],
+                documentType:  rd.documentType || "UNKNOWN",
+                // These carry the exact bounding boxes from the AI scan
+                findings:      rd.findings  || [],
+                maskZones:     rd.maskZones || [],
+                maskedAadhaar: file.maskedAadhaar || rd.maskedAadhaar || null
+            });
+        }
+
+        const downloadFilename = shouldMask ? `REDACTED_${file.originalName}` : file.originalName;
+
         // ── 6. Return ─────────────────────────────────────────────────────────
         return {
             decryptedPath,
-            originalName: file.originalName,
+            originalName: downloadFilename,
+            rawOriginalName: file.originalName,
+            isMasked: shouldMask,
             mimeType:     version.mimeType,
             isZeroKnowledge: false,
             iv:           version.iv

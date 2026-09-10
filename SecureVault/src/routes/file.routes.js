@@ -55,6 +55,13 @@ router.post(
     fileController.restore
 );
 
+// ── AI PII Scan for a specific file (used by ShareModal) ─────────────────────
+router.get(
+    "/:id/scan-pii",
+    authMiddleware,
+    fileController.scanPii
+);
+
 // ── Delete a file and all its versions ───────────────────────────────────────
 router.delete(
     "/:id",

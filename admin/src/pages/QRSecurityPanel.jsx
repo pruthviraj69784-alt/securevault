@@ -18,7 +18,7 @@ export default function QRSecurityPanel() {
   })
 
   useEffect(() => {
-    const token = localStorage.getItem('sv_token')
+    const token = localStorage.getItem('sv_admin_token') || localStorage.getItem('sv_token')
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token || ''}`
 

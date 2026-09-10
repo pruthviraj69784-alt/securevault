@@ -28,6 +28,7 @@ class ShareRepository {
                 password: data.password || null,
                 maxDownloads: data.maxDownloads !== undefined && data.maxDownloads !== null && data.maxDownloads !== "" ? Number(data.maxDownloads) : 1,
                 allowedIP: data.allowedIP || null,
+                autoMask: data.autoMask !== undefined ? Boolean(data.autoMask) : true,
                 version: data.version ? Number(data.version) : null
             },
             include: { file: { include: { versions: { orderBy: { version: "asc" } } } } }

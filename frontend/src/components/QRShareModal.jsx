@@ -156,6 +156,10 @@ function QRContent({ file, onClose }) {
           <div className="w-full space-y-2 text-xs text-muted bg-[var(--bg-card)] rounded-xl p-3 border border-theme">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+              AI Masking: Recipient downloads sanitized copy with PII masked
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
               Single-use — auto-consumed on download
             </div>
             <div className="flex items-center gap-1.5">

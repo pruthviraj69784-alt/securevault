@@ -38,8 +38,11 @@ export default function SharedWithMe() {
   })
   const shares = data || []
 
-  const handleDownload = async (shareId, name) => {
+  const handleDownload = async (shareId, name, status) => {
     try {
+      if (status === 'PENDING') {
+        await api.patch(`shares/internal/${shareId}/respond`, { action: 'ACCEPT' }).catch(() => {})
+      }
       const res = await api.get(`shares/internal/${shareId}/download`, { responseType: 'blob' })
       await processAndSaveDownload(res, name, zkPassphrase)
       toast.success('Download started!')
@@ -47,7 +50,15 @@ export default function SharedWithMe() {
       if (err.isZeroKnowledge) {
         setPendingZK({ res: err.pendingRes, name: err.finalFilename || name })
       } else {
-        toast.error(err?.response?.data?.message || err?.message || 'Download failed')
+        let msg = err?.response?.data?.message || err?.message || 'Download failed'
+        if (err?.response?.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text()
+            const parsed = JSON.parse(text)
+            if (parsed?.message) msg = parsed.message
+          } catch {}
+        }
+        toast.error(msg)
       }
     }
   }
@@ -131,7 +142,7 @@ export default function SharedWithMe() {
                         </span>
                       </td>
                       <td>
-                        <button onClick={() => handleDownload(shareId, fileName)} className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
+                        <button onClick={() => handleDownload(shareId, fileName, s.status)} className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                           <Download size={13} /> Download
                         </button>
                       </td>

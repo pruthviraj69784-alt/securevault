@@ -18,9 +18,14 @@ if (!connectionString) {
         prisma = globalForPrisma.__prisma;
     } else {
         try {
-            const pool = new Pool({ connectionString });
+            const pool = new Pool({
+                connectionString,
+                connectionTimeoutMillis: 1500,
+                idleTimeoutMillis: 5000,
+                max: 5
+            });
             const adapter = new PrismaPg(pool);
-            prisma = new PrismaClient({ adapter });
+            prisma = new PrismaClient({ adapter, log: process.env.NODE_ENV === "development" ? ["error"] : [] });
 
             if (process.env.NODE_ENV !== "production") {
                 globalForPrisma.__prisma = prisma;

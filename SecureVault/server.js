@@ -35,6 +35,17 @@ async function startServer() {
         const websocketService = require("./src/services/websocket.service");
         websocketService.init(server);
 
+        // Schedule DPDP expired consent purge (runs hourly, plus initial check)
+        const dpdpService = require("./src/services/dpdp.service");
+        dpdpService.purgeExpiredConsents().catch(err => {
+            console.warn("⚠️ Initial DPDP purge check:", err.message);
+        });
+        setInterval(() => {
+            dpdpService.purgeExpiredConsents().catch(err => {
+                console.warn("⚠️ DPDP purge cron:", err.message);
+            });
+        }, 60 * 60 * 1000);
+
     } catch (err) {
         console.error("❌ Server startup failed:", err.message);
         process.exit(1);
@@ -96,4 +107,5 @@ if (process.env.NODE_ENV !== "test") {
     startServer();
 }
 
+// AI PII detection engine enabled
 module.exports = startServer;

@@ -3,12 +3,12 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Files, HardDrive, Upload, Share2, ShieldAlert,
-  Star, Lock, ShieldCheck, Activity, Clock, Trash2, ArrowUpRight, Zap, TrendingUp
+  Star, Lock, ShieldCheck, Activity, Clock, Trash2, ArrowUpRight, Zap, TrendingUp, Fingerprint
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
-import { fileApi, auditApi } from '../services/api'
+import { fileApi, auditApi, dlpApi } from '../services/api'
 import { useSecurityScore } from '../hooks/useSecurityScore'
 import MetricCard from '../components/MetricCard'
 import ProgressBar from '../components/ProgressBar'
@@ -74,6 +74,14 @@ export default function Dashboard() {
     queryFn:  () => auditApi.myLogs(1).then(r => r.data.data),
   })
 
+  const isAdmin = user?.role?.toLowerCase() === 'admin'
+  const { data: dlpMetrics } = useQuery({
+    queryKey: ['dlp-metrics-summary'],
+    queryFn: () => dlpApi.metrics().then(r => r.data.data).catch(() => null),
+    enabled: isAdmin,
+    refetchInterval: 20000,
+  })
+
   const files  = filesData || []
   const audits = auditData?.logs || []
 
@@ -81,6 +89,7 @@ export default function Dashboard() {
   const totalShares  = files.reduce((s, f) => s + (f.shareCount || 0), 0)
   const favoriteCount = files.filter(f => f.isFavorite).length
   const zkFilesCount  = files.filter(f => f.versions?.some(v => v.isZeroKnowledge)).length
+  const dpdpFilesCount = files.filter(f => f.hasSensitiveData).length
   const STORAGE_LIMIT = 100 * 1024 * 1024
   const usagePct = Math.min(100, Math.round((totalSize / STORAGE_LIMIT) * 100))
 
@@ -98,7 +107,7 @@ export default function Dashboard() {
     { label: 'Files Uploaded',  value: files.length,           icon: Files,      color: 'var(--accent)',  sub: `${files.length} in vault` },
     { label: 'Storage Used',    value: formatBytes(totalSize),  icon: HardDrive,  color: '#8b5cf6',        sub: `${usagePct}% of 100 MB` },
     { label: 'Active Shares',   value: totalShares,             icon: Share2,     color: 'var(--info)',    sub: 'token links active' },
-    { label: 'Favorites',       value: favoriteCount,           icon: Star,       color: 'var(--warning)', sub: 'starred files' },
+    { label: 'DPDP Protected',  value: dpdpFilesCount,          icon: Fingerprint, color: '#ec4899',       sub: 'Aadhaar / PII masked' },
     { label: 'Zero-Knowledge',  value: zkFilesCount,            icon: Lock,       color: 'var(--success)', sub: 'client-encrypted' },
     { label: 'Security Score',  value: `${realTimeScore}%`,     icon: isTampered ? ShieldAlert : ShieldCheck, color: scoreColor, sub: scoreLabel },
   ]
@@ -156,6 +165,57 @@ export default function Dashboard() {
           : METRICS.map((m, i) => <MetricCard key={m.label} index={i} {...m} />)
         }
       </div>
+
+      {/* ── Admin DLP Monitoring Banner ── */}
+      {isAdmin && dlpMetrics && (
+        <motion.div
+          className="card"
+          {...fadeUp(0.12)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+            background: dlpMetrics.openAlerts > 0 ? 'rgba(239, 68, 68, 0.06)' : 'rgba(16, 185, 129, 0.06)',
+            border: `1px solid ${dlpMetrics.openAlerts > 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`,
+            padding: '1rem 1.25rem', borderRadius: '0.875rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              style={{
+                width: '2.5rem', height: '2.5rem', borderRadius: '0.75rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: dlpMetrics.openAlerts > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                color: dlpMetrics.openAlerts > 0 ? 'var(--danger)' : 'var(--success)',
+              }}
+            >
+              <ShieldAlert size={20} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                  Data Leak Prevention (PS5) Live Monitor
+                </h3>
+                <span className={`badge ${dlpMetrics.openAlerts > 0 ? 'badge-danger' : 'badge-success'}`}>
+                  {dlpMetrics.openAlerts} Open Alerts
+                </span>
+                <span className="badge badge-info">Risk Index: {dlpMetrics.riskIndex ?? 0}/100</span>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.2rem', marginBottom: 0 }}>
+                {dlpMetrics.openAlerts > 0
+                  ? 'Unusual movement detected across sharing channels or rapid downloads.'
+                  : 'All transfer channels are clean. No unauthorized movement detected.'}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/dlp"
+            className="btn-primary"
+            style={{ fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
+          >
+            Open DLP Dashboard <ArrowUpRight size={14} />
+          </Link>
+        </motion.div>
+      )}
 
       {/* ── Storage + Quick Actions ── */}
       <motion.div

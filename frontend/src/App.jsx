@@ -16,12 +16,14 @@ import AccessRequests from './pages/AccessRequests'
 import Notifications  from './pages/Notifications'
 import PublicSharePage from './pages/PublicSharePage'
 import SecurityCenter from './pages/SecurityCenter'
+import ConsentManager from './pages/ConsentManager'
 import AuditLogs   from './pages/AuditLogs'
 import Webhooks    from './pages/Webhooks'
 import Admin       from './pages/Admin'
 import Settings    from './pages/Settings'
 import Profile     from './pages/Profile'
 import QRScannerPage from './pages/QRScannerPage'
+import DlpDashboard from './pages/DlpDashboard'
 
 function PrivateRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth()
@@ -68,6 +70,7 @@ export default function App() {
       <Route path="/trash"     element={<PrivateRoute><Layout><Trash /></Layout></PrivateRoute>} />
       <Route path="/upload"    element={<PrivateRoute><Layout><Upload /></Layout></PrivateRoute>} />
       <Route path="/security"  element={<PrivateRoute><Layout><SecurityCenter /></Layout></PrivateRoute>} />
+      <Route path="/consent"   element={<PrivateRoute><Layout><ConsentManager /></Layout></PrivateRoute>} />
       <Route path="/audit"     element={<PrivateRoute><Layout><AuditLogs /></Layout></PrivateRoute>} />
       <Route path="/webhooks"  element={<PrivateRoute><Layout><Webhooks /></Layout></PrivateRoute>} />
       <Route path="/settings"  element={<PrivateRoute><Layout><Settings /></Layout></PrivateRoute>} />
@@ -79,6 +82,7 @@ export default function App() {
 
       {/* Admin only */}
       <Route path="/admin" element={<PrivateRoute adminOnly><Layout><Admin /></Layout></PrivateRoute>} />
+      <Route path="/dlp"   element={<PrivateRoute adminOnly><Layout><DlpDashboard /></Layout></PrivateRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

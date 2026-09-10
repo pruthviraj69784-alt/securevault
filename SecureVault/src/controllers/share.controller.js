@@ -49,20 +49,30 @@ class ShareController {
             if (result.iv) res.setHeader("X-File-IV", result.iv);
         }
 
-        const fileStream = fs.createReadStream(result.path);
+        if (result.isMasked) {
+            res.setHeader("X-Is-Masked", "true");
+        }
 
+        let cleanedUp = false;
+        const cleanup = () => {
+            if (!cleanedUp && result.path) {
+                cleanedUp = true;
+                fs.unlink(result.path, () => {});
+            }
+        };
+
+        const fileStream = fs.createReadStream(result.path);
         fileStream.pipe(res);
 
         fileStream.on("error", (err) => {
-            fs.unlink(result.path, () => {});
+            cleanup();
             if (!res.headersSent) {
                 res.status(500).json({ success: false, message: "Error streaming file" });
             }
         });
 
-        res.on("finish", () => {
-            fs.unlink(result.path, () => {});
-        });
+        res.on("finish", cleanup);
+        res.on("close", cleanup);
 
     });
 

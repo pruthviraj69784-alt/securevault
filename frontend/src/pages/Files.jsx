@@ -234,6 +234,24 @@ export default function Files() {
                   <span className={`badge ${STATUS_BADGE[latest?.status] || 'badge-info'}`}>{latest?.status || 'PROCESSING'}</span>
                 </div>
 
+                {f.hasSensitiveData && (
+                  <div style={{
+                    marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0.35rem 0.6rem', borderRadius: '0.4rem',
+                    background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)',
+                    fontSize: '0.68rem'
+                  }}>
+                    <span style={{ color: 'var(--danger)', fontWeight: 700 }}>
+                      🛡️ DPDP PII: {f.sensitiveTypes?.join(', ') || 'Sensitive'}
+                    </span>
+                    {f.maskedAadhaar && (
+                      <span style={{ fontFamily: 'monospace', color: 'var(--text)', fontWeight: 600 }}>
+                        {f.maskedAadhaar}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ marginTop: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>v{f.currentVersion || 1} · SHA-256</span>
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -287,6 +305,11 @@ export default function Files() {
                           <span style={{ fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
                             {f.originalName}
                           </span>
+                          {f.hasSensitiveData && (
+                            <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '0.1rem 0.35rem', borderRadius: '0.25rem', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', flexShrink: 0 }}>
+                              DPDP PII
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{formatBytes(latest?.size)}</td>

@@ -95,7 +95,14 @@ class FileController {
         const result = await fileService.downloadFile(
             req.params.id,
             uid,
-            req.query.version // optional; undefined → currentVersion
+            req.query.version, // optional; undefined → currentVersion
+            {
+                ip: req.ip,
+                userAgent: req.headers["user-agent"],
+                masked: req.query.masked !== undefined
+                    ? (req.query.masked === "true" || req.query.redacted === "true")
+                    : undefined
+            }
         );
 
         const mimeType = result.mimeType || "application/octet-stream";
@@ -109,19 +116,30 @@ class FileController {
             res.setHeader("X-File-IV", result.iv || "");
         }
 
+        if (result.isMasked) {
+            res.setHeader("X-Is-Masked", "true");
+        }
+
+        let cleanedUp = false;
+        const cleanup = () => {
+            if (!cleanedUp && result.decryptedPath) {
+                cleanedUp = true;
+                fs.unlink(result.decryptedPath, () => {});
+            }
+        };
+
         const fileStream = fs.createReadStream(result.decryptedPath);
         fileStream.pipe(res);
 
         fileStream.on("error", (err) => {
-            fs.unlink(result.decryptedPath, () => {});
+            cleanup();
             if (!res.headersSent) {
                 res.status(500).json({ success: false, message: "Error streaming file" });
             }
         });
 
-        res.on("finish", () => {
-            fs.unlink(result.decryptedPath, () => {});
-        });
+        res.on("finish", cleanup);
+        res.on("close", cleanup);
 
     });
 
@@ -266,6 +284,131 @@ class FileController {
             message: result.message
         });
 
+    });
+
+    /**
+     * GET /api/files/:id/scan-pii
+     * Decrypts the file and runs a live PII scan on the actual content.
+     * Used by ShareModal "Re-Check PII" button.
+     */
+    scanPii = asyncHandler(async (req, res) => {
+        const fileId = req.params.id;
+        const userId = req.user?._id || req.user?.id;
+
+        const fileRepository = require("../repositories/file.repository");
+        const storageService = require("../services/storage.service");
+        const { decryptFile } = require("../utils/encryption.util");
+        const { processFile } = require("../utils/redactor.util");
+
+        const file = await fileRepository.getFileById(fileId);
+        if (!file) throw new AppError("File not found", 404);
+
+        const fileOwner = (file.ownerId || file.owner)?.toString();
+        if (fileOwner && userId && fileOwner !== userId.toString()) {
+            throw new AppError("Unauthorized", 403);
+        }
+
+        const latestVersion = (file.versions || [])[file.versions.length - 1];
+        if (!latestVersion || !latestVersion.s3Key) {
+            // Return stored metadata if file is not yet downloadable
+            return res.json({
+                success: true,
+                data: {
+                    hasPII: file.hasSensitiveData || false,
+                    types: file.sensitiveTypes || [],
+                    findingsCount: 0,
+                    maskedAadhaar: file.maskedAadhaar || null,
+                    source: "metadata"
+                }
+            });
+        }
+
+        // If file is still processing, return stored metadata
+        if (latestVersion.status === "PROCESSING") {
+            return res.json({
+                success: true,
+                data: {
+                    hasPII: file.hasSensitiveData || false,
+                    types: file.sensitiveTypes || [],
+                    findingsCount: 0,
+                    maskedAadhaar: file.maskedAadhaar || null,
+                    source: "metadata"
+                }
+            });
+        }
+
+        let encryptedTmpPath = null;
+        let decryptedPath = null;
+        try {
+            encryptedTmpPath = await storageService.download(latestVersion.s3Key);
+
+            // For zero-knowledge files we can't scan server-side
+            if (latestVersion.isZeroKnowledge) {
+                return res.json({
+                    success: true,
+                    data: {
+                        hasPII: false,
+                        types: [],
+                        findingsCount: 0,
+                        maskedAadhaar: null,
+                        source: "zero-knowledge-skipped"
+                    }
+                });
+            }
+
+            decryptedPath = await decryptFile(encryptedTmpPath, file.originalName);
+            fs.unlink(encryptedTmpPath, () => {});
+            encryptedTmpPath = null;
+
+            const mimeType = latestVersion.mimeType || "application/octet-stream";
+            const result = await processFile(decryptedPath, mimeType);
+
+            // Clean up redacted preview file if created
+            if (result.redactedPath) {
+                try { fs.unlinkSync(result.redactedPath); } catch {}
+            }
+
+            // Update DB with scan result
+            const prisma = require("../config/prisma");
+            await prisma.file.update({
+                where: { id: file.id || file._id },
+                data: {
+                    hasSensitiveData: result.hasPII,
+                    sensitiveTypes: result.types || [],
+                    maskedAadhaar: result.maskedAadhaar || file.maskedAadhaar || null
+                }
+            }).catch(() => {});
+
+            return res.json({
+                success: true,
+                data: {
+                    hasPII: result.hasPII,
+                    types: result.types,
+                    findingsCount: result.findings?.length || 0,
+                    maskedAadhaar: result.maskedAadhaar,
+                    documentType: result.documentType || null,
+                    summary: result.summary || null,
+                    source: result.source || "live-scan"
+                }
+            });
+
+        } catch (err) {
+            // Fallback: return stored metadata on error
+            return res.json({
+                success: true,
+                data: {
+                    hasPII: file.hasSensitiveData || false,
+                    types: file.sensitiveTypes || [],
+                    findingsCount: 0,
+                    maskedAadhaar: file.maskedAadhaar || null,
+                    source: "metadata-fallback",
+                    error: err.message
+                }
+            });
+        } finally {
+            if (encryptedTmpPath) { try { fs.unlinkSync(encryptedTmpPath); } catch {} }
+            if (decryptedPath) { try { fs.unlinkSync(decryptedPath); } catch {} }
+        }
     });
 
 }

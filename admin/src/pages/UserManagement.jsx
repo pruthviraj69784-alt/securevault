@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { Users, Search, Filter, Eye, Shield, Ban, CheckCircle2, KeyRound, Trash2, ShieldAlert } from 'lucide-react'
 import { adminApi } from '../services/api'
+import { useAdminAuth } from '../context/AdminAuthContext'
 import UserDetailsDrawer from '../components/UserDetailsDrawer'
 
 export default function UserManagement() {
+  const { user: currentAdmin } = useAdminAuth()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
@@ -87,13 +89,19 @@ export default function UserManagement() {
                   </td>
                   <td className="py-3 px-4 text-muted">{u.email}</td>
                   <td className="py-3 px-4">
-                    <button
-                      onClick={() => roleMut.mutate({ id: u._id, role: u.role === 'ADMIN' ? 'USER' : 'ADMIN' })}
-                      className={`badge cursor-pointer ${u.role === 'ADMIN' ? 'badge-warning' : 'badge-info'}`}
-                      title="Click to toggle role"
-                    >
-                      {u.role}
-                    </button>
+                    {(() => {
+                      const isSelf = currentAdmin?._id === u._id || currentAdmin?.id === u._id || currentAdmin?.email === u.email;
+                      return (
+                        <button
+                          disabled={isSelf}
+                          onClick={() => !isSelf && roleMut.mutate({ id: u._id, role: u.role === 'ADMIN' ? 'USER' : 'ADMIN' })}
+                          className={`badge ${isSelf ? 'opacity-90 cursor-default' : 'cursor-pointer'} ${u.role === 'ADMIN' ? 'badge-warning' : 'badge-info'}`}
+                          title={isSelf ? 'Current administrator (cannot demote yourself)' : 'Click to toggle role'}
+                        >
+                          {u.role} {isSelf && '(You)'}
+                        </button>
+                      );
+                    })()}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`badge ${u.status === 'Suspended' ? 'badge-danger' : 'badge-success'}`}>

@@ -12,6 +12,8 @@ import WebhookMonitoring from './pages/WebhookMonitoring'
 import AuditExplorer from './pages/AuditExplorer'
 import PlatformSettings from './pages/PlatformSettings'
 import QRSecurityPanel from './pages/QRSecurityPanel'
+import DpdpPanel from './pages/DpdpPanel'
+import DlpPanel from './pages/DlpPanel'
 
 function AdminPrivateRoute({ children }) {
   const { user, loading } = useAdminAuth()
@@ -54,6 +56,8 @@ export default function App() {
       <Route path="/webhooks" element={<AdminPrivateRoute><AdminLayout><WebhookMonitoring /></AdminLayout></AdminPrivateRoute>} />
       <Route path="/audits" element={<AdminPrivateRoute><AdminLayout><AuditExplorer /></AdminLayout></AdminPrivateRoute>} />
       <Route path="/qr" element={<AdminPrivateRoute><AdminLayout><QRSecurityPanel /></AdminLayout></AdminPrivateRoute>} />
+      <Route path="/dpdp" element={<AdminPrivateRoute><AdminLayout><DpdpPanel /></AdminLayout></AdminPrivateRoute>} />
+      <Route path="/dlp" element={<AdminPrivateRoute><AdminLayout><DlpPanel /></AdminLayout></AdminPrivateRoute>} />
       <Route path="/settings" element={<AdminPrivateRoute><AdminLayout><PlatformSettings /></AdminLayout></AdminPrivateRoute>} />
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
