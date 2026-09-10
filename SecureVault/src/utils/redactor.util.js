@@ -7,6 +7,7 @@
  */
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const zlib = require("zlib");
 
@@ -27,6 +28,25 @@ async function getOcrText(imagePath) {
         const buf = fs.readFileSync(imagePath);
         return buf.toString("latin1").replace(/[^\x20-\x7E\n]/g, " ");
     }
+}
+
+async function prepareImageForScanning(filePath, mimeType) {
+    const normalizedMimeType = String(mimeType || "").toLowerCase();
+    if (!normalizedMimeType.includes("heic") && !normalizedMimeType.includes("heif")) {
+        return { filePath, mimeType, cleanup: () => {} };
+    }
+
+    const convertedPath = path.join(os.tmpdir(), `securevault-pii-${Date.now()}-${Math.random().toString(16).slice(2)}.png`);
+    const sharp = require("sharp");
+    await sharp(filePath).png().toFile(convertedPath);
+
+    return {
+        filePath: convertedPath,
+        mimeType: "image/png",
+        cleanup: () => {
+            try { fs.unlinkSync(convertedPath); } catch {}
+        }
+    };
 }
 
 // ── PII Pattern Definitions ──────────────────────────────────────────────────
@@ -460,19 +480,24 @@ async function processFile(filePath, mimeType) {
 
     // ── TIER 1: AI Vision for image files ────────────────────────────────────
     if (isImageMimeType(mimeType)) {
+        const preparedImage = await prepareImageForScanning(filePath, mimeType);
+        const scanPath = preparedImage.filePath;
+        const scanMimeType = preparedImage.mimeType;
+
         // Try GPT-4o Vision first
-        const aiResult = await analyzeImageWithAI(filePath, mimeType);
+        const aiResult = await analyzeImageWithAI(scanPath, scanMimeType);
 
         if (aiResult) {
             let redactedPath = null;
             if (aiResult.hasPII) {
-                const ext = path.extname(filePath);
-                const base = path.basename(filePath, ext);
-                redactedPath = path.join(path.dirname(filePath), `${base}_redacted${ext}`);
-                fs.copyFileSync(filePath, redactedPath);
-                await redactImage(redactedPath, mimeType, aiResult);
+                const ext = path.extname(scanPath);
+                const base = path.basename(scanPath, ext);
+                redactedPath = path.join(path.dirname(scanPath), `${base}_redacted${ext}`);
+                fs.copyFileSync(scanPath, redactedPath);
+                await redactImage(redactedPath, scanMimeType, aiResult);
             }
 
+            preparedImage.cleanup();
             return {
                 hasPII: aiResult.hasPII,
                 types: aiResult.types,
@@ -488,23 +513,24 @@ async function processFile(filePath, mimeType) {
 
         // AI not configured or failed — fall back to Tesseract OCR
         console.log("[REDACTOR] Falling back to Tesseract OCR for image...");
-        const rawText = await getOcrText(filePath);
+        const rawText = await getOcrText(scanPath);
         const scanResult = scanText(rawText);
         const maskedAadhaar = extractMaskedAadhaar(rawText);
 
         let redactedPath = null;
         if (scanResult.hasPII) {
-            const ext = path.extname(filePath);
-            const base = path.basename(filePath, ext);
-            redactedPath = path.join(path.dirname(filePath), `${base}_redacted${ext}`);
-            fs.copyFileSync(filePath, redactedPath);
-            await redactImage(redactedPath, mimeType, {
+            const ext = path.extname(scanPath);
+            const base = path.basename(scanPath, ext);
+            redactedPath = path.join(path.dirname(scanPath), `${base}_redacted${ext}`);
+            fs.copyFileSync(scanPath, redactedPath);
+            await redactImage(redactedPath, scanMimeType, {
                 hasPII: true,
                 types: scanResult.types,
                 maskedAadhaar
             });
         }
 
+        preparedImage.cleanup();
         return {
             hasPII: scanResult.hasPII,
             types: scanResult.types,

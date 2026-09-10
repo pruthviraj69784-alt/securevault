@@ -24,7 +24,11 @@ const IMAGE_MIME_TYPES = new Set([
     "image/tiff",
     "image/bmp",
     "image/webp",
-    "image/gif"
+    "image/gif",
+    "image/heic",
+    "image/heif",
+    "image/x-heic",
+    "image/x-heif"
 ]);
 
 // ── Vision system prompt for PII extraction ───────────────────────────
@@ -126,15 +130,13 @@ async function analyzeImageWithAI(imagePath, mimeType) {
         const response = await openai.chat.completions.create({
             model,
             max_tokens: 1500,
-            messages: [
-                {
+            messages: [{
                     role: "system",
                     content: PII_SYSTEM_PROMPT
                 },
                 {
                     role: "user",
-                    content: [
-                        {
+                    content: [{
                             type: "image_url",
                             image_url: {
                                 url: `data:${imageMediaType};base64,${base64Image}`
@@ -149,7 +151,7 @@ async function analyzeImageWithAI(imagePath, mimeType) {
             ]
         });
 
-        const content = response.choices?.[0]?.message?.content?.trim();
+        const content = response.choices ? .[0] ? .message ? .content ? .trim();
         if (!content) {
             throw new Error("Empty response from GPT-4o");
         }
@@ -207,8 +209,7 @@ async function analyzeTextWithAI(text) {
         const response = await openai.chat.completions.create({
             model,
             max_tokens: 1024,
-            messages: [
-                {
+            messages: [{
                     role: "system",
                     content: PII_SYSTEM_PROMPT
                 },
@@ -219,7 +220,7 @@ async function analyzeTextWithAI(text) {
             ]
         });
 
-        const content = response.choices?.[0]?.message?.content?.trim();
+        const content = response.choices ? .[0] ? .message ? .content ? .trim();
         if (!content) return null;
 
         const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
