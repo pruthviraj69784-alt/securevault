@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Files, Star, Trash2, Upload, Share2, ClipboardList,
@@ -6,7 +6,7 @@ import {
   ChevronLeft, Menu, Users, Key, Bell, Search, Command, ChevronDown,
   Sparkles, Fingerprint
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth }  from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import NotificationBell from './NotificationBell'
@@ -46,9 +46,15 @@ function avatarGradient(name = '') {
 export default function Layout({ children }) {
   const { user, logout }  = useAuth()
   const { dark, toggle }  = useTheme()
+  const location           = useLocation()
   const navigate          = useNavigate()
   const [collapsed, setCollapsed]   = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [globalSearch, setGlobalSearch] = useState('')
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
 
   const handleLogout = () => { logout(); navigate('/login') }
   const isAdmin = user?.role?.toLowerCase() === 'admin'
@@ -61,9 +67,10 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh' }}>
       {/* ── Sidebar ── */}
       <motion.aside
+        className={`app-sidebar${mobileOpen ? ' mobile-open' : ''}`}
         animate={{ width: collapsed ? 68 : 260 }}
         transition={{ duration: 0.25, ease: 'easeInOut' }}
         style={{
@@ -281,11 +288,28 @@ export default function Layout({ children }) {
         )}
       </motion.aside>
 
+      <button
+        type="button"
+        className={`mobile-nav-scrim${mobileOpen ? ' is-open' : ''}`}
+        aria-label="Close navigation"
+        onClick={() => setMobileOpen(false)}
+      />
+
       {/* ── Main ── */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'auto', minWidth: 0 }}>
         {/* Topbar */}
         <header className="topbar">
-          <div style={{ display: 'none' }} className="lg:block">
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen(open => !open)}
+          >
+            {mobileOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
+          </button>
+
+          <div className="topbar-context">
             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
               Secure workspace
             </span>

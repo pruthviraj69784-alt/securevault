@@ -195,7 +195,7 @@ export default function Files() {
                 className="file-preview-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.35 }}
+                transition={{ delay: Math.min(i, 8) * 0.02, duration: 0.2 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
