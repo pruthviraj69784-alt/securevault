@@ -18,10 +18,30 @@ let _tesseractWorker = null;
 async function getOcrText(imagePath) {
     try {
         const Tesseract = require("tesseract.js");
-        const { data: { text } } = await Tesseract.recognize(imagePath, "eng", {
+        const recognize = (source) => Tesseract.recognize(source, "eng", {
             logger: () => {} // suppress progress logs
         });
-        return text || "";
+
+        const firstPass = await recognize(imagePath);
+        const texts = [firstPass.data && firstPass.data.text || ""];
+
+        // PAN cards often have low-contrast text. A normalized high-resolution
+        // pass improves OCR without requiring an external AI provider.
+        try {
+            const enhancedImage = await require("sharp")(imagePath)
+                .resize({ width: 2200, withoutEnlargement: false })
+                .grayscale()
+                .normalize()
+                .sharpen()
+                .png()
+                .toBuffer();
+            const secondPass = await recognize(enhancedImage);
+            texts.push(secondPass.data && secondPass.data.text || "");
+        } catch (enhanceErr) {
+            console.warn("[REDACTOR] Enhanced OCR pass skipped:", enhanceErr.message);
+        }
+
+        return texts.filter(Boolean).join("\n");
     } catch (err) {
         console.warn("[REDACTOR] OCR failed, falling back to heuristic:", err.message);
         // Heuristic latin1 fallback — can catch PAN-like strings embedded in some image metadata
