@@ -151,7 +151,10 @@ async function analyzeImageWithAI(imagePath, mimeType) {
             ]
         });
 
-        const content = response.choices ? .[0] ? .message ? .content ? .trim();
+        const content = response && response.choices && response.choices[0] &&
+            response.choices[0].message && response.choices[0].message.content ?
+            response.choices[0].message.content.trim() :
+            "";
         if (!content) {
             throw new Error("Empty response from GPT-4o");
         }
@@ -220,7 +223,10 @@ async function analyzeTextWithAI(text) {
             ]
         });
 
-        const content = response.choices ? .[0] ? .message ? .content ? .trim();
+        const content = response && response.choices && response.choices[0] &&
+            response.choices[0].message && response.choices[0].message.content ?
+            response.choices[0].message.content.trim() :
+            "";
         if (!content) return null;
 
         const jsonStr = content.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
