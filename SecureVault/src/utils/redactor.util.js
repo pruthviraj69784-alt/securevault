@@ -42,9 +42,13 @@ const PII_PATTERNS = {
         maskFull: () => "XXXX-XXXX-XXXX"
     },
     PAN: {
-        regex: /\b([A-Z]{5}[0-9]{4}[A-Z]{1})\b/g,
+        // OCR commonly inserts spaces or dashes between the PAN groups.
+        regex: /\b([A-Z]{5})[\s\-]?([0-9]{4})[\s\-]?([A-Z])\b/g,
         label: "PAN Card",
-        mask: (m) => `XXXXX${m.slice(5)}`,
+        mask: (m) => {
+            const pan = m.replace(/[\s\-]/g, "").toUpperCase();
+            return `XXXXX${pan.slice(5)}`;
+        },
         maskFull: () => "XXXXXXXXXX"
     },
     PHONE: {
@@ -90,12 +94,15 @@ function scanText(text) {
         const regex = new RegExp(def.regex.source, "gi");
         let match;
         while ((match = regex.exec(normalizedText)) !== null) {
+            const value = type === "PAN" ?
+                match[0].replace(/[\s\-]/g, "") :
+                match[0];
             types.add(type);
             findings.push({
                 type,
                 label: def.label,
-                value: match[0].toUpperCase(),
-                masked: def.mask(match[0].toUpperCase()),
+                value: value.toUpperCase(),
+                masked: def.mask(value.toUpperCase()),
                 index: match.index
             });
         }
@@ -220,7 +227,10 @@ async function redactImage(filePath, mimeType, piiDetails = {}) {
                 const bh = Math.min(height - by, Math.round(((ymax - ymin) / 1000) * height) + pad * 2);
                 if (bw > 0 && bh > 0) {
                     boxesToRedact.push({
-                        x: bx, y: by, w: bw, h: bh,
+                        x: bx,
+                        y: by,
+                        w: bw,
+                        h: bh,
                         zone: zone.zone || "MASK",
                         label: zone.label || zone.zone || "REDACTED"
                     });
@@ -237,7 +247,10 @@ async function redactImage(filePath, mimeType, piiDetails = {}) {
                     const bh = Math.min(height - by, Math.round(((ymax - ymin) / 1000) * height) + 8);
                     if (bw > 0 && bh > 0) {
                         boxesToRedact.push({
-                            x: bx, y: by, w: bw, h: bh,
+                            x: bx,
+                            y: by,
+                            w: bw,
+                            h: bh,
                             zone: f.type || "PII",
                             label: `${f.type || "PII"} REDACTED`
                         });
@@ -258,10 +271,27 @@ async function redactImage(filePath, mimeType, piiDetails = {}) {
             await worker.terminate();
 
             if (ocrRet && ocrRet.data) {
-                for (const block of (ocrRet.data.blocks || [])) {
-                    for (const para of (block.paragraphs || [])) {
-                        for (const line of (para.lines || [])) {
+                for (const block of(ocrRet.data.blocks || [])) {
+                    for (const para of(block.paragraphs || [])) {
+                        for (const line of(para.lines || [])) {
                             const lineText = (line.text || "").trim();
+                            const normalizedLineText = lineText.replace(/[\s\-]/g, "").toUpperCase();
+
+                            // OCR may split a PAN into separate words (ABCDE 1234 F).
+                            if (/\b[A-Z]{5}[0-9]{4}[A-Z]\b/.test(normalizedLineText)) {
+                                hasPII = true;
+                                if (!types.includes("PAN")) types.push("PAN");
+                                if (line.bbox) {
+                                    boxesToRedact.push({
+                                        x: line.bbox.x0 - 6,
+                                        y: line.bbox.y0 - 4,
+                                        w: (line.bbox.x1 - line.bbox.x0) + 12,
+                                        h: (line.bbox.y1 - line.bbox.y0) + 8,
+                                        zone: "PAN_NUM",
+                                        label: "PAN NUMBER"
+                                    });
+                                }
+                            }
 
                             // Full Aadhaar 12-digit number row (3 groups of 4 digits)
                             if (/\b\d{4}\s+\d{4}\s+\d{4}\b/.test(lineText)) {
@@ -295,7 +325,7 @@ async function redactImage(filePath, mimeType, piiDetails = {}) {
                             }
 
                             // DOB value only (e.g. "04/02/2006" or "12-08-1995")
-                            for (const w of (line.words || [])) {
+                            for (const w of(line.words || [])) {
                                 const wt = (w.text || "").trim();
                                 if (/\b\d{2}[\/\-]\d{2}[\/\-]\d{4}\b/.test(wt)) {
                                     hasPII = true;
